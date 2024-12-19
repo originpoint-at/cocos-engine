@@ -41,21 +41,19 @@ class SP_API TwoColorTimeline : public CurveTimeline {
     RTTI_DECL
 
 public:
-    static const int ENTRIES;
-
-    explicit TwoColorTimeline(int frameCount);
+    explicit TwoColorTimeline(int frameCount,size_t bezierCount);
 
     virtual void apply(Skeleton& skeleton, float lastTime, float time, Vector<Event*>* pEvents, float alpha, MixBlend blend, MixDirection direction);
-
-    virtual int getPropertyId();
 
     /// Sets the time and value of the specified keyframe.
     void setFrame(int frameIndex, float time, float r, float g, float b, float a, float r2, float g2, float b2);
 
     int getSlotIndex();
     void setSlotIndex(int inValue);
+    float getCurveComponentValue(float time, size_t componentOffset);
 
 private:
+    static const int ENTRIES;
     static const int PREV_TIME;
     static const int PREV_R;
     static const int PREV_G;

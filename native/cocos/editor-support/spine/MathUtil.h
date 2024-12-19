@@ -1,16 +1,16 @@
 /******************************************************************************
  * Spine Runtimes License Agreement
- * Last updated January 1, 2020. Replaces all prior versions.
+ * Last updated July 28, 2023. Replaces all prior versions.
  *
- * Copyright (c) 2013-2020, Esoteric Software LLC
+ * Copyright (c) 2013-2023, Esoteric Software LLC
  *
  * Integration of the Spine Runtimes into software or otherwise creating
  * derivative works of the Spine Runtimes is permitted under the terms and
  * conditions of Section 2 of the Spine Editor License Agreement:
  * http://esotericsoftware.com/spine-editor-license
  *
- * Otherwise, it is permitted to integrate the Spine Runtimes into software
- * or otherwise create derivative works of the Spine Runtimes (collectively,
+ * Otherwise, it is permitted to integrate the Spine Runtimes into software or
+ * otherwise create derivative works of the Spine Runtimes (collectively,
  * "Products"), provided that each user of the Products must obtain their own
  * Spine Editor license and redistribution of the Products in any form must
  * include this license and copyright notice.
@@ -23,138 +23,117 @@
  * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES,
  * BUSINESS INTERRUPTION, OR LOSS OF USE, DATA, OR PROFITS) HOWEVER CAUSED AND
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
- * THE SPINE RUNTIMES, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THE
+ * SPINE RUNTIMES, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *****************************************************************************/
 
 #ifndef Spine_MathUtil_h
 #define Spine_MathUtil_h
 
 #include <spine/SpineObject.h>
-#include <spine/RTTI.h>
-#include <math.h>
-#include <cstdint>
+
+#include <string.h>
+// Needed for older MSVC versions
+#undef min
+#undef max
 
 namespace spine {
 
-class SP_API MathUtil {
-private:
-    MathUtil();
+	class SP_API MathUtil : public SpineObject {
+	private:
+		MathUtil();
 
-public:
-    static constexpr float Pi = 3.1415926535897932385f;
-    static constexpr float Pi_2 = 3.1415926535897932385f * 2;
-    static constexpr float Deg_Rad = (3.1415926535897932385f / 180.0f);
-    static constexpr float Rad_Deg = (180.0f / 3.1415926535897932385f);
+	public:
+		static const float Pi;
+		static const float Pi_2;
+        static const float InvPi_2;
+		static const float Deg_Rad;
+		static const float Rad_Deg;
 
-    template <typename T>
-    static inline T min(T a, T b) { return a < b ? a : b; }
+		template<typename T>
+		static inline T min(T a, T b) { return a < b ? a : b; }
 
-    template <typename T>
-    static inline T max(T a, T b) { return a > b ? a : b; }
+		template<typename T>
+		static inline T max(T a, T b) { return a > b ? a : b; }
 
-    static float sign(float val);
+		static float sign(float val);
 
-    static float clamp(float x, float lower, float upper);
+		static float clamp(float x, float lower, float upper);
 
-    static inline float abs(float v) {
-        return ::abs(v);
-    }
+		static float abs(float v);
 
-    /// Returns the sine in radians from a lookup table.
-    static inline float sin(float radians) {
-        return ::sin(radians);
-    }
+		/// Returns the sine in radians from a lookup table.
+		static float sin(float radians);
 
-    /// Returns the cosine in radians from a lookup table.
-    static inline float cos(float radians) {
-        return ::cos(radians);
-    }
+		/// Returns the cosine in radians from a lookup table.
+		static float cos(float radians);
 
-    /// Returns the sine in radians from a lookup table.
-    static inline float sinDeg(float degrees) {
-        return ::sin(degrees * MathUtil::Deg_Rad);
-    }
+		/// Returns the sine in radians from a lookup table.
+		static float sinDeg(float degrees);
 
-    /// Returns the cosine in radians from a lookup table.
-    static inline float cosDeg(float degrees) {
-        return ::cos(degrees * MathUtil::Deg_Rad);
-    }
+		/// Returns the cosine in radians from a lookup table.
+		static float cosDeg(float degrees);
 
-    /// Returns atan2 in radians, faster but less accurate than Math.Atan2. Average error of 0.00231 radians (0.1323
-    /// degrees), largest error of 0.00488 radians (0.2796 degrees).
-    static inline float atan2(float y, float x) {
-        return ::atan2(y, x);
-    }
+		/// Returns atan2 in radians, faster but less accurate than Math.Atan2. Average error of 0.00231 radians (0.1323
+		/// degrees), largest error of 0.00488 radians (0.2796 degrees).
+		static float atan2(float y, float x);
 
-    static inline float acos(float v) {
-        return ::acos(v);
-    }
+        static float atan2Deg(float x, float y);
 
-    static inline float sqrt(float v) {
-        return ::sqrt(v);
-    }
+		static float acos(float v);
 
-    static inline float fmod(float a, float b) {
-        return ::fmod(a, b);
-    }
+		static float sqrt(float v);
 
-    static bool isNan(float v);
+		static float fmod(float a, float b);
 
-    static inline float random() {
-        return ::rand() / static_cast<float>(RAND_MAX);
-    }
+		static bool isNan(float v);
 
-    static inline float randomTriangular(float min, float max) {
-        return randomTriangular(min, max, (min + max) * 0.5f);
-    }
+        static float quietNan();
 
-    static float randomTriangular(float min, float max, float mode);
+		static float random();
 
-    static inline float pow(float a, float b) {
-        return (float)::pow(a, b);
-    }
+		static float randomTriangular(float min, float max);
 
-    static uint64_t ipow(uint64_t base, uint32_t exp);
-};
+		static float randomTriangular(float min, float max, float mode);
 
-struct SP_API Interpolation {
-    RTTI_DECL
-    virtual float apply(float a) = 0;
+		static float pow(float a, float b);
 
-    virtual float interpolate(float start, float end, float a) {
-        return start + (end - start) * apply(a);
-    }
+        static float ceil(float v);
+	};
 
-    virtual ~Interpolation(){};
-};
+	struct SP_API Interpolation {
+		virtual float apply(float a) = 0;
 
+		virtual float interpolate(float start, float end, float a) {
+			return start + (end - start) * apply(a);
+		}
 
-struct SP_API PowInterpolation : public Interpolation {
-    RTTI_DECL
-    PowInterpolation(int power) : power(power) {
-    }
+		virtual ~Interpolation() {};
+	};
 
-    float apply(float a) {
-        if (a <= 0.5f) return MathUtil::pow(a * 2.0f, (float)power) / 2.0f;
-        return MathUtil::pow((a - 1.0f) * 2.0f, (float)power) / (power % 2 == 0 ? -2.0f : 2.0f) + 1.0f;
-    }
+	struct SP_API PowInterpolation : public Interpolation {
+		PowInterpolation(int power) : power(power) {
+		}
 
-    int power;
-};
+		float apply(float a) {
+			if (a <= 0.5f) return MathUtil::pow(a * 2.0f, (float) power) / 2.0f;
+			return MathUtil::pow((a - 1.0f) * 2.0f, (float) power) / (power % 2 == 0 ? -2.0f : 2.0f) + 1.0f;
+		}
 
-struct SP_API PowOutInterpolation : public Interpolation {
-    RTTI_DECL
-    PowOutInterpolation(int power) : power(power) {
-    }
+		int power;
+	};
 
-    float apply(float a) {
-        return MathUtil::pow(a - 1, (float)power) * (power % 2 == 0 ? -1.0f : 1.0f) + 1.0f;
-    }
+	struct SP_API PowOutInterpolation : public Interpolation {
+		PowOutInterpolation(int power) : power(power) {
+		}
 
-    int power;
-};
+		float apply(float a) {
+			return MathUtil::pow(a - 1, (float) power) * (power % 2 == 0 ? -1.0f : 1.0f) + 1.0f;
+		}
 
-} // namespace spine
+		int power;
+	};
+
+}
 
 #endif /* Spine_MathUtil_h */

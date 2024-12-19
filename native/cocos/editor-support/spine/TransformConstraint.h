@@ -1,16 +1,16 @@
 /******************************************************************************
  * Spine Runtimes License Agreement
- * Last updated January 1, 2020. Replaces all prior versions.
+ * Last updated July 28, 2023. Replaces all prior versions.
  *
- * Copyright (c) 2013-2020, Esoteric Software LLC
+ * Copyright (c) 2013-2023, Esoteric Software LLC
  *
  * Integration of the Spine Runtimes into software or otherwise creating
  * derivative works of the Spine Runtimes is permitted under the terms and
  * conditions of Section 2 of the Spine Editor License Agreement:
  * http://esotericsoftware.com/spine-editor-license
  *
- * Otherwise, it is permitted to integrate the Spine Runtimes into software
- * or otherwise create derivative works of the Spine Runtimes (collectively,
+ * Otherwise, it is permitted to integrate the Spine Runtimes into software or
+ * otherwise create derivative works of the Spine Runtimes (collectively,
  * "Products"), provided that each user of the Products must obtain their own
  * Spine Editor license and redistribution of the Products in any form must
  * include this license and copyright notice.
@@ -23,8 +23,8 @@
  * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES,
  * BUSINESS INTERRUPTION, OR LOSS OF USE, DATA, OR PROFITS) HOWEVER CAUSED AND
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
- * THE SPINE RUNTIMES, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THE
+ * SPINE RUNTIMES, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *****************************************************************************/
 
 #ifndef Spine_TransformConstraint_h
@@ -35,65 +35,79 @@
 #include <spine/Vector.h>
 
 namespace spine {
-class TransformConstraintData;
-class Skeleton;
-class Bone;
+	class TransformConstraintData;
 
-class SP_API TransformConstraint : public Updatable {
-    friend class Skeleton;
-    friend class TransformConstraintTimeline;
+	class Skeleton;
 
-    RTTI_DECL
+	class Bone;
 
-public:
-    TransformConstraint(TransformConstraintData& data, Skeleton& skeleton);
+	class SP_API TransformConstraint : public Updatable {
+		friend class Skeleton;
 
-    void apply();
+		friend class TransformConstraintTimeline;
 
-    virtual void update();
+	RTTI_DECL
 
-    virtual int getOrder();
+	public:
+		TransformConstraint(TransformConstraintData &data, Skeleton &skeleton);
 
-    TransformConstraintData& getData();
+		virtual void update(Physics physics);
 
-    inline Vector<Bone*>& getBones() { return _bones; }
+		virtual int getOrder();
 
-    Bone* getTarget();
-    void setTarget(Bone* inValue);
+		TransformConstraintData &getData();
 
-    float getRotateMix();
-    void setRotateMix(float inValue);
+		Vector<Bone *> &getBones();
 
-    float getTranslateMix();
-    void setTranslateMix(float inValue);
+		Bone *getTarget();
 
-    float getScaleMix();
-    void setScaleMix(float inValue);
+		void setTarget(Bone *inValue);
 
-    float getShearMix();
-    void setShearMix(float inValue);
+		float getMixRotate();
 
-    virtual bool isActive();
+		void setMixRotate(float inValue);
 
-    virtual void setActive(bool inValue);;
+		float getMixX();
 
-#ifndef __EMSCRIPTEN__
-private:
-#endif
-    TransformConstraintData& _data;
-    Vector<Bone*> _bones;
-    Bone* _target;
-    float _rotateMix, _translateMix, _scaleMix, _shearMix;
-    bool _active;
+		void setMixX(float inValue);
 
-    void applyAbsoluteWorld();
+		float getMixY();
 
-    void applyRelativeWorld();
+		void setMixY(float inValue);
 
-    void applyAbsoluteLocal();
+		float getMixScaleX();
 
-    void applyRelativeLocal();
-};
-} // namespace spine
+		void setMixScaleX(float inValue);
+
+		float getMixScaleY();
+
+		void setMixScaleY(float inValue);
+
+		float getMixShearY();
+
+		void setMixShearY(float inValue);
+
+		bool isActive();
+
+		void setActive(bool inValue);
+
+        void setToSetupPose();
+
+	private:
+		TransformConstraintData &_data;
+		Vector<Bone *> _bones;
+		Bone *_target;
+		float _mixRotate, _mixX, _mixY, _mixScaleX, _mixScaleY, _mixShearY;
+		bool _active;
+
+		void applyAbsoluteWorld();
+
+		void applyRelativeWorld();
+
+		void applyAbsoluteLocal();
+
+		void applyRelativeLocal();
+	};
+}
 
 #endif /* Spine_TransformConstraint_h */

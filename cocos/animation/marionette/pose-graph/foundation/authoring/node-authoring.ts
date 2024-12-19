@@ -66,7 +66,7 @@ export interface PoseGraphNodeAppearanceOptions {
      * @en
      * Theme color. Currently should be a color hex string starting with "#", for example: `"#FF00FF"`.
      */
-    themeColor?: `#${string}`;
+    themeColor?: string; //`#${string}`;
 
     /**
      * @zh

@@ -1,16 +1,16 @@
 /******************************************************************************
  * Spine Runtimes License Agreement
- * Last updated January 1, 2020. Replaces all prior versions.
+ * Last updated July 28, 2023. Replaces all prior versions.
  *
- * Copyright (c) 2013-2020, Esoteric Software LLC
+ * Copyright (c) 2013-2023, Esoteric Software LLC
  *
  * Integration of the Spine Runtimes into software or otherwise creating
  * derivative works of the Spine Runtimes is permitted under the terms and
  * conditions of Section 2 of the Spine Editor License Agreement:
  * http://esotericsoftware.com/spine-editor-license
  *
- * Otherwise, it is permitted to integrate the Spine Runtimes into software
- * or otherwise create derivative works of the Spine Runtimes (collectively,
+ * Otherwise, it is permitted to integrate the Spine Runtimes into software or
+ * otherwise create derivative works of the Spine Runtimes (collectively,
  * "Products"), provided that each user of the Products must obtain their own
  * Spine Editor license and redistribution of the Products in any form must
  * include this license and copyright notice.
@@ -23,8 +23,8 @@
  * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES,
  * BUSINESS INTERRUPTION, OR LOSS OF USE, DATA, OR PROFITS) HOWEVER CAUSED AND
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
- * THE SPINE RUNTIMES, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THE
+ * SPINE RUNTIMES, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *****************************************************************************/
 
 #ifndef Spine_DeformTimeline_h
@@ -33,39 +33,48 @@
 #include <spine/CurveTimeline.h>
 
 namespace spine {
-class VertexAttachment;
+	class VertexAttachment;
 
-class SP_API DeformTimeline : public CurveTimeline {
-    friend class SkeletonBinary;
-    friend class SkeletonJson;
+	class SP_API DeformTimeline : public CurveTimeline {
+		friend class SkeletonBinary;
 
-    RTTI_DECL
+		friend class SkeletonJson;
 
-public:
-    explicit DeformTimeline(int frameCount);
+	RTTI_DECL
 
-    virtual void apply(Skeleton& skeleton, float lastTime, float time, Vector<Event*>* pEvents, float alpha, MixBlend blend, MixDirection direction);
+	public:
+		explicit DeformTimeline(size_t frameCount, size_t bezierCount, int slotIndex, VertexAttachment *attachment);
 
-    virtual int getPropertyId();
+		virtual void
+		apply(Skeleton &skeleton, float lastTime, float time, Vector<Event *> *pEvents, float alpha, MixBlend blend,
+			  MixDirection direction);
 
-    /// Sets the time and value of the specified keyframe.
-    void setFrame(int frameIndex, float time, Vector<float>& vertices);
+		/// Sets the time and value of the specified keyframe.
+		void setFrame(int frameIndex, float time, Vector<float> &vertices);
 
-    int getSlotIndex();
-    void setSlotIndex(int inValue);
-    inline Vector<float>& getFrames() { return _frames; }
-    inline Vector<Vector<float> >& getVertices() { return _frameVertices; }
-    VertexAttachment* getAttachment();
-    void setAttachment(VertexAttachment* inValue);
+		Vector <Vector<float>> &getVertices();
 
-#ifndef __EMSCRIPTEN__
-private:
-#endif
-    int _slotIndex;
-    Vector<float> _frames;
-    Vector<Vector<float> > _frameVertices;
-    VertexAttachment* _attachment;
-};
-} // namespace spine
+		VertexAttachment *getAttachment();
+
+		void setAttachment(VertexAttachment *inValue);
+
+		virtual void
+		setBezier(size_t bezier, size_t frame, float value, float time1, float value1, float cx1, float cy1, float cx2,
+				  float cy2, float time2, float value2);
+
+		float getCurvePercent(float time, int frame);
+
+		int getSlotIndex() { return _slotIndex; }
+
+		void setSlotIndex(int inValue) { _slotIndex = inValue; }
+
+	protected:
+		int _slotIndex;
+
+		Vector <Vector<float>> _vertices;
+
+		VertexAttachment *_attachment;
+	};
+}
 
 #endif /* Spine_DeformTimeline_h */

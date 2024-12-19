@@ -40,7 +40,6 @@
 #include <spine/Bone.h>
 #include <spine/Slot.h>
 #include <spine/SlotData.h>
-#include <spine/TimelineType.h>
 
 using namespace spine;
 
@@ -63,9 +62,33 @@ const int TwoColorTimeline::R2 = 5;
 const int TwoColorTimeline::G2 = 6;
 const int TwoColorTimeline::B2 = 7;
 
-TwoColorTimeline::TwoColorTimeline(int frameCount) : CurveTimeline(frameCount), _slotIndex(0) {
+TwoColorTimeline::TwoColorTimeline(int frameCount,size_t bezierCount) : CurveTimeline(frameCount,ENTRIES,bezierCount), _slotIndex(0) {
     _frames.ensureCapacity(frameCount * ENTRIES);
     _frames.setSize(frameCount * ENTRIES, 0);
+}
+
+float TwoColorTimeline::getCurveComponentValue(float time, size_t componentOffset) {
+    int i = (int)_frames.size() - ENTRIES;
+    for (int ii = ENTRIES; ii <= i; ii += ENTRIES) {
+        if (_frames[ii] > time) {
+            i = ii - ENTRIES;
+            break;
+        }
+    }
+
+    int curveType = (int)_curves[i / ENTRIES];
+    switch (curveType) {
+        case CurveTimeline::LINEAR: {
+            float before = _frames[i], value = _frames[i + componentOffset];
+            return value + (time - before) / (_frames[i + ENTRIES] - before) *
+                           (_frames[i + ENTRIES + componentOffset] - value);
+        }
+        case CurveTimeline::STEPPED:
+            return _frames[i + componentOffset];
+    }
+
+    // Handle Bezier curve interpolation for the component
+    return getBezierValue(time, i, componentOffset, curveType - CurveTimeline::BEZIER);
 }
 
 void TwoColorTimeline::apply(Skeleton &skeleton, float lastTime, float time, Vector<Event *> *pEvents, float alpha,
@@ -82,62 +105,38 @@ void TwoColorTimeline::apply(Skeleton &skeleton, float lastTime, float time, Vec
     Color &darkColor = slot.getDarkColor();
     const Color &dataColor = slot._data.getColor();
     const Color &dataDarkColor = slot._data.getDarkColor();
+
     if (time < _frames[0]) {
-        // Time is before first frame.
+        // Handle time before the first frame
         switch (blend) {
             case MixBlend_Setup:
                 color.set(dataColor);
                 darkColor.set(dataDarkColor);
                 return;
-            case MixBlend_First: {
-                color.r += (color.r - dataColor.r) * alpha;
-                color.g += (color.g - dataColor.g) * alpha;
-                color.b += (color.b - dataColor.b) * alpha;
-                color.a += (color.a - dataColor.a) * alpha;
+            case MixBlend_First:
+                color.r += (dataColor.r - color.r) * alpha;
+                color.g += (dataColor.g - color.g) * alpha;
+                color.b += (dataColor.b - color.b) * alpha;
+                color.a += (dataColor.a - color.a) * alpha;
 
-                darkColor.r += (darkColor.r - dataDarkColor.r) * alpha;
-                darkColor.g += (darkColor.g - dataDarkColor.g) * alpha;
-                darkColor.b += (darkColor.b - dataDarkColor.b) * alpha;
+                darkColor.r += (dataDarkColor.r - darkColor.r) * alpha;
+                darkColor.g += (dataDarkColor.g - darkColor.g) * alpha;
+                darkColor.b += (dataDarkColor.b - darkColor.b) * alpha;
+
                 return;
-            }
             default:
                 return;
         }
     }
 
-    float r, g, b, a, r2, g2, b2;
-    if (time >= _frames[_frames.size() - ENTRIES]) {
-        // Time is after last frame.
-        size_t i = _frames.size();
-        r = _frames[i + PREV_R];
-        g = _frames[i + PREV_G];
-        b = _frames[i + PREV_B];
-        a = _frames[i + PREV_A];
-        r2 = _frames[i + PREV_R2];
-        g2 = _frames[i + PREV_G2];
-        b2 = _frames[i + PREV_B2];
-    } else {
-        // Interpolate between the previous frame and the current frame.
-        size_t frame = (size_t)Animation::binarySearch(_frames, time, ENTRIES);
-        r = _frames[frame + PREV_R];
-        g = _frames[frame + PREV_G];
-        b = _frames[frame + PREV_B];
-        a = _frames[frame + PREV_A];
-        r2 = _frames[frame + PREV_R2];
-        g2 = _frames[frame + PREV_G2];
-        b2 = _frames[frame + PREV_B2];
-        float frameTime = _frames[frame];
-        float percent = getCurvePercent(frame / ENTRIES - 1,
-                                        1 - (time - frameTime) / (_frames[frame + PREV_TIME] - frameTime));
-
-        r += (_frames[frame + R] - r) * percent;
-        g += (_frames[frame + G] - g) * percent;
-        b += (_frames[frame + B] - b) * percent;
-        a += (_frames[frame + A] - a) * percent;
-        r2 += (_frames[frame + R2] - r2) * percent;
-        g2 += (_frames[frame + G2] - g2) * percent;
-        b2 += (_frames[frame + B2] - b2) * percent;
-    }
+    // Interpolated values for each color component
+    float r = getCurveComponentValue(time, PREV_R);
+    float g = getCurveComponentValue(time, PREV_G);
+    float b = getCurveComponentValue(time, PREV_B);
+    float a = getCurveComponentValue(time, PREV_A);
+    float r2 = getCurveComponentValue(time, PREV_R2);
+    float g2 = getCurveComponentValue(time, PREV_G2);
+    float b2 = getCurveComponentValue(time, PREV_B2);
 
     if (alpha == 1) {
         color.set(r, g, b, a);
@@ -152,10 +151,6 @@ void TwoColorTimeline::apply(Skeleton &skeleton, float lastTime, float time, Vec
         light.add((r - light.r) * alpha, (g - light.g) * alpha, (b - light.b) * alpha, (a - light.a) * alpha);
         dark.add((r2 - dark.r) * alpha, (g2 - dark.g) * alpha, (b2 - dark.b) * alpha, 0);
     }
-}
-
-int TwoColorTimeline::getPropertyId() {
-    return ((int)TimelineType_TwoColor << 24) + _slotIndex;
 }
 
 void TwoColorTimeline::setFrame(int frameIndex, float time, float r, float g, float b, float a, float r2, float g2, float b2) {

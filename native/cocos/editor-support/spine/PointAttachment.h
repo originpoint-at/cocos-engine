@@ -1,16 +1,16 @@
 /******************************************************************************
  * Spine Runtimes License Agreement
- * Last updated January 1, 2020. Replaces all prior versions.
+ * Last updated July 28, 2023. Replaces all prior versions.
  *
- * Copyright (c) 2013-2020, Esoteric Software LLC
+ * Copyright (c) 2013-2023, Esoteric Software LLC
  *
  * Integration of the Spine Runtimes into software or otherwise creating
  * derivative works of the Spine Runtimes is permitted under the terms and
  * conditions of Section 2 of the Spine Editor License Agreement:
  * http://esotericsoftware.com/spine-editor-license
  *
- * Otherwise, it is permitted to integrate the Spine Runtimes into software
- * or otherwise create derivative works of the Spine Runtimes (collectively,
+ * Otherwise, it is permitted to integrate the Spine Runtimes into software or
+ * otherwise create derivative works of the Spine Runtimes (collectively,
  * "Products"), provided that each user of the Products must obtain their own
  * Spine Editor license and redistribution of the Products in any form must
  * include this license and copyright notice.
@@ -23,53 +23,59 @@
  * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES,
  * BUSINESS INTERRUPTION, OR LOSS OF USE, DATA, OR PROFITS) HOWEVER CAUSED AND
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
- * THE SPINE RUNTIMES, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THE
+ * SPINE RUNTIMES, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *****************************************************************************/
 
 #ifndef Spine_PointAttachment_h
 #define Spine_PointAttachment_h
 
 #include <spine/Attachment.h>
+#include <spine/Color.h>
 
 namespace spine {
-class Bone;
+	class Bone;
 
-/// An attachment which is a single point and a rotation. This can be used to spawn projectiles, particles, etc. A bone can be
-/// used in similar ways, but a PointAttachment is slightly less expensive to compute and can be hidden, shown, and placed in a
-/// skin.
-///
-/// See http://esotericsoftware.com/spine-point-attachments for Point Attachments in the Spine User Guide.
-///
-class SP_API PointAttachment : public Attachment {
-    friend class SkeletonBinary;
-    friend class SkeletonJson;
+	/// An attachment which is a single point and a rotation. This can be used to spawn projectiles, particles, etc. A bone can be
+	/// used in similar ways, but a PointAttachment is slightly less expensive to compute and can be hidden, shown, and placed in a
+	/// skin.
+	///
+	/// See http://esotericsoftware.com/spine-point-attachments for Point Attachments in the Spine User Guide.
+	///
+	class SP_API PointAttachment : public Attachment {
+		friend class SkeletonBinary;
 
-    RTTI_DECL
+		friend class SkeletonJson;
 
-public:
-    explicit PointAttachment(const String& name);
+	RTTI_DECL
 
-    void computeWorldPosition(Bone& bone, float& ox, float& oy);
+	public:
+		explicit PointAttachment(const String &name);
 
-    float computeWorldRotation(Bone& bone);
+		void computeWorldPosition(Bone &bone, float &ox, float &oy);
 
-    float getX();
-    void setX(float inValue);
+		float computeWorldRotation(Bone &bone);
 
-    float getY();
-    void setY(float inValue);
+		float getX();
 
-    float getRotation();
-    void setRotation(float inValue);
+		void setX(float inValue);
 
-    virtual Attachment* copy();
+		float getY();
 
-#ifndef __EMSCRIPTEN__
-private:
-#endif
-    float _x, _y, _rotation;
-};
-} // namespace spine
+		void setY(float inValue);
+
+		float getRotation();
+
+		void setRotation(float inValue);
+
+		Color &getColor();
+
+		virtual Attachment *copy();
+
+	private:
+		float _x, _y, _rotation;
+		Color _color;
+	};
+}
 
 #endif /* Spine_PointAttachment_h */

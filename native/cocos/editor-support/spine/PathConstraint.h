@@ -1,16 +1,16 @@
 /******************************************************************************
  * Spine Runtimes License Agreement
- * Last updated January 1, 2020. Replaces all prior versions.
+ * Last updated July 28, 2023. Replaces all prior versions.
  *
- * Copyright (c) 2013-2020, Esoteric Software LLC
+ * Copyright (c) 2013-2023, Esoteric Software LLC
  *
  * Integration of the Spine Runtimes into software or otherwise creating
  * derivative works of the Spine Runtimes is permitted under the terms and
  * conditions of Section 2 of the Spine Editor License Agreement:
  * http://esotericsoftware.com/spine-editor-license
  *
- * Otherwise, it is permitted to integrate the Spine Runtimes into software
- * or otherwise create derivative works of the Spine Runtimes (collectively,
+ * Otherwise, it is permitted to integrate the Spine Runtimes into software or
+ * otherwise create derivative works of the Spine Runtimes (collectively,
  * "Products"), provided that each user of the Products must obtain their own
  * Spine Editor license and redistribution of the Products in any form must
  * include this license and copyright notice.
@@ -23,8 +23,8 @@
  * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES,
  * BUSINESS INTERRUPTION, OR LOSS OF USE, DATA, OR PROFITS) HOWEVER CAUSED AND
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
- * THE SPINE RUNTIMES, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THE
+ * SPINE RUNTIMES, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *****************************************************************************/
 
 #ifndef Spine_PathConstraint_h
@@ -35,82 +35,99 @@
 #include <spine/Vector.h>
 
 namespace spine {
-class PathConstraintData;
-class Skeleton;
-class PathAttachment;
-class Bone;
-class Slot;
+	class PathConstraintData;
 
-class SP_API PathConstraint : public Updatable {
-    friend class Skeleton;
-    friend class PathConstraintMixTimeline;
-    friend class PathConstraintPositionTimeline;
-    friend class PathConstraintSpacingTimeline;
+	class Skeleton;
 
-    RTTI_DECL
+	class PathAttachment;
 
-public:
-    PathConstraint(PathConstraintData& data, Skeleton& skeleton);
+	class Bone;
 
-    /// Applies the constraint to the constrained bones.
-    void apply();
+	class Slot;
 
-    virtual void update();
+	class SP_API PathConstraint : public Updatable {
+		friend class Skeleton;
 
-    virtual int getOrder();
+		friend class PathConstraintMixTimeline;
 
-    float getPosition();
-    void setPosition(float inValue);
+		friend class PathConstraintPositionTimeline;
 
-    float getSpacing();
-    void setSpacing(float inValue);
+		friend class PathConstraintSpacingTimeline;
 
-    float getRotateMix();
-    void setRotateMix(float inValue);
+	RTTI_DECL
 
-    float getTranslateMix();
-    void setTranslateMix(float inValue);
+	public:
+		PathConstraint(PathConstraintData &data, Skeleton &skeleton);
 
-    inline Vector<Bone*>& getBones() { return _bones; }
+		virtual void update(Physics physics);
 
-    Slot* getTarget();
-    void setTarget(Slot* inValue);
+		virtual int getOrder();
 
-    PathConstraintData& getData();
+        PathConstraintData &getData();
 
-    virtual bool isActive();
+        Vector<Bone *> &getBones();
 
-    virtual void setActive(bool inValue);;
-#ifndef __EMSCRIPTEN__
-private:
-#endif
-    static constexpr float EPSILON = 0.00001f;
-    static constexpr int NONE = -1;
-    static constexpr int BEFORE = -2;
-    static constexpr int AFTER = -3;
+        Slot *getTarget();
 
-    PathConstraintData& _data;
-    Vector<Bone*> _bones;
-    Slot* _target;
-    float _position, _spacing, _rotateMix, _translateMix;
+        void setTarget(Slot *inValue);
 
-    Vector<float> _spaces;
-    Vector<float> _positions;
-    Vector<float> _world;
-    Vector<float> _curves;
-    Vector<float> _lengths;
-    Vector<float> _segments;
+		float getPosition();
 
-    bool _active;
+		void setPosition(float inValue);
 
-    Vector<float>& computeWorldPositions(PathAttachment& path, int spacesCount, bool tangents, bool percentPosition, bool percentSpacing);
+		float getSpacing();
 
-    static void addBeforePosition(float p, Vector<float>& temp, int i, Vector<float>& output, int o);
+		void setSpacing(float inValue);
 
-    static void addAfterPosition(float p, Vector<float>& temp, int i, Vector<float>& output, int o);
+		float getMixRotate();
 
-    static void addCurvePosition(float p, float x1, float y1, float cx1, float cy1, float cx2, float cy2, float x2, float y2, Vector<float>& output, int o, bool tangents);
-};
-} // namespace spine
+		void setMixRotate(float inValue);
+
+		float getMixX();
+
+		void setMixX(float inValue);
+
+		float getMixY();
+
+		void setMixY(float inValue);
+
+		bool isActive();
+
+		void setActive(bool inValue);
+
+        void setToSetupPose();
+
+	private:
+		static const float EPSILON;
+		static const int NONE;
+		static const int BEFORE;
+		static const int AFTER;
+
+		PathConstraintData &_data;
+		Vector<Bone *> _bones;
+		Slot *_target;
+		float _position, _spacing;
+		float _mixRotate, _mixX, _mixY;
+
+		Vector<float> _spaces;
+		Vector<float> _positions;
+		Vector<float> _world;
+		Vector<float> _curves;
+		Vector<float> _lengths;
+		Vector<float> _segments;
+
+		bool _active;
+
+		Vector<float> &computeWorldPositions(PathAttachment &path, int spacesCount, bool tangents);
+
+		static void addBeforePosition(float p, Vector<float> &temp, int i, Vector<float> &output, int o);
+
+		static void addAfterPosition(float p, Vector<float> &temp, int i, Vector<float> &output, int o);
+
+		static void
+		addCurvePosition(float p, float x1, float y1, float cx1, float cy1, float cx2, float cy2, float x2, float y2,
+						 Vector<float> &output, int o, bool tangents);
+	};
+}
 
 #endif /* Spine_PathConstraint_h */

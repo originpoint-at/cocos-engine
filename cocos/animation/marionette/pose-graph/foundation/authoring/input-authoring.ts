@@ -1,9 +1,10 @@
 import { Quat, Vec3, assertIsTrue, js } from '../../../../../core';
 import { PoseGraphNode } from '../pose-graph-node';
 import { PoseGraphType } from '../type-system';
-import { NodeInputPath } from '../node-shell';
+//import { NodeInputPath } from '../node-shell';
 import { OperationOnFreestandingNodeError } from '../errors';
 import type { PoseGraph } from '../../pose-graph';
+type NodeInputPath = readonly [string] | readonly [string, number];
 
 export type PoseGraphInputKey = NodeInputPath;
 

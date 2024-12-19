@@ -8,7 +8,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 project(${APP_NAME}_wasm)
 
-set(BUILD_WASM 1)
+set(BUILD_WASM 0)
 set(ENABLE_JSON_PARSER 1)
 set(ENABLE_BINARY_PARSER 1)
 # set(ENABLE_PROFILING "--profiling")

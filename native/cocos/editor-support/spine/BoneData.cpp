@@ -1,16 +1,16 @@
 /******************************************************************************
  * Spine Runtimes License Agreement
- * Last updated January 1, 2020. Replaces all prior versions.
+ * Last updated July 28, 2023. Replaces all prior versions.
  *
- * Copyright (c) 2013-2020, Esoteric Software LLC
+ * Copyright (c) 2013-2023, Esoteric Software LLC
  *
  * Integration of the Spine Runtimes into software or otherwise creating
  * derivative works of the Spine Runtimes is permitted under the terms and
  * conditions of Section 2 of the Spine Editor License Agreement:
  * http://esotericsoftware.com/spine-editor-license
  *
- * Otherwise, it is permitted to integrate the Spine Runtimes into software
- * or otherwise create derivative works of the Spine Runtimes (collectively,
+ * Otherwise, it is permitted to integrate the Spine Runtimes into software or
+ * otherwise create derivative works of the Spine Runtimes (collectively,
  * "Products"), provided that each user of the Products must obtain their own
  * Spine Editor license and redistribution of the Products in any form must
  * include this license and copyright notice.
@@ -23,125 +23,144 @@
  * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES,
  * BUSINESS INTERRUPTION, OR LOSS OF USE, DATA, OR PROFITS) HOWEVER CAUSED AND
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
- * THE SPINE RUNTIMES, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THE
+ * SPINE RUNTIMES, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *****************************************************************************/
-
-#ifdef SPINE_UE4
-    #include "SpinePluginPrivatePCH.h"
-#endif
 
 #include <spine/BoneData.h>
 
 #include <assert.h>
 
 using namespace spine;
-
+RTTI_IMPL_NOPARENT(BoneData)
 BoneData::BoneData(int index, const String &name, BoneData *parent) : _index(index),
-                                                                      _name(name),
-                                                                      _parent(parent),
-                                                                      _length(0),
-                                                                      _x(0),
-                                                                      _y(0),
-                                                                      _rotation(0),
-                                                                      _scaleX(1),
-                                                                      _scaleY(1),
-                                                                      _shearX(0),
-                                                                      _shearY(0),
-                                                                      _transformMode(TransformMode_Normal),
-                                                                      _skinRequired(false) {
-    assert(index >= 0);
-    assert(_name.length() > 0);
+																	  _name(name),
+																	  _parent(parent),
+																	  _length(0),
+																	  _x(0),
+																	  _y(0),
+																	  _rotation(0),
+																	  _scaleX(1),
+																	  _scaleY(1),
+																	  _shearX(0),
+																	  _shearY(0),
+																	  _inherit(Inherit_Normal),
+																	  _skinRequired(false),
+																	  _color(),
+																	  _icon(),
+																	  _visible(true) {
+	assert(index >= 0);
+	assert(_name.length() > 0);
 }
 
 int BoneData::getIndex() {
-    return _index;
+	return _index;
 }
 
 const String &BoneData::getName() {
-    return _name;
+	return _name;
 }
 
 BoneData *BoneData::getParent() {
-    return _parent;
+	return _parent;
 }
 
 float BoneData::getLength() {
-    return _length;
+	return _length;
 }
 
 void BoneData::setLength(float inValue) {
-    _length = inValue;
+	_length = inValue;
 }
 
 float BoneData::getX() {
-    return _x;
+	return _x;
 }
 
 void BoneData::setX(float inValue) {
-    _x = inValue;
+	_x = inValue;
 }
 
 float BoneData::getY() {
-    return _y;
+	return _y;
 }
 
 void BoneData::setY(float inValue) {
-    _y = inValue;
+	_y = inValue;
 }
 
 float BoneData::getRotation() {
-    return _rotation;
+	return _rotation;
 }
 
 void BoneData::setRotation(float inValue) {
-    _rotation = inValue;
+	_rotation = inValue;
 }
 
 float BoneData::getScaleX() {
-    return _scaleX;
+	return _scaleX;
 }
 
 void BoneData::setScaleX(float inValue) {
-    _scaleX = inValue;
+	_scaleX = inValue;
 }
 
 float BoneData::getScaleY() {
-    return _scaleY;
+	return _scaleY;
 }
 
 void BoneData::setScaleY(float inValue) {
-    _scaleY = inValue;
+	_scaleY = inValue;
 }
 
 float BoneData::getShearX() {
-    return _shearX;
+	return _shearX;
 }
 
 void BoneData::setShearX(float inValue) {
-    _shearX = inValue;
+	_shearX = inValue;
 }
 
 float BoneData::getShearY() {
-    return _shearY;
+	return _shearY;
 }
 
 void BoneData::setShearY(float inValue) {
-    _shearY = inValue;
+	_shearY = inValue;
 }
 
-TransformMode BoneData::getTransformMode() {
-    return _transformMode;
+Inherit BoneData::getInherit() {
+	return _inherit;
 }
 
-void BoneData::setTransformMode(TransformMode inValue) {
-    _transformMode = inValue;
+void BoneData::setInherit(Inherit inValue) {
+	_inherit = inValue;
 }
 
 bool BoneData::isSkinRequired() {
-    return _skinRequired;
+	return _skinRequired;
 }
 
 void BoneData::setSkinRequired(bool inValue) {
-    _skinRequired = inValue;
+	_skinRequired = inValue;
+}
+
+Color &BoneData::getColor() {
+	return _color;
+}
+
+const String &BoneData::getIcon() {
+	return _icon;
+}
+
+void BoneData::setIcon(const String &icon) {
+	this->_icon = icon;
+}
+
+bool BoneData::isVisible() {
+	return _visible;
+}
+
+void BoneData::setVisible(bool inValue) {
+	this->_visible = inValue;
 }

@@ -86,6 +86,36 @@ function initAsmJS (asmFactory, asmJsMemUrl: string): Promise<void> {
         }).then(resolve).catch(reject);
     });
 }
+function initAsmJSWithoutMem(asmFactory): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+        try {
+            const wasmMemory: any = {};
+            wasmMemory.buffer = new ArrayBuffer(MEMORYSIZE); // 初始化内存
+
+            const module = {
+                wasmMemory
+            };
+
+            // 调用 asmFactory 初始化实例
+            asmFactory(module).then((instance: any) => {
+                wasmInstance = instance; // 设置全局 wasm 实例
+                
+                // 通知所有注册的回调
+                registerList.forEach((cb) => {
+                    cb(wasmInstance);
+                });
+
+                resolve(); // 初始化成功
+            }).catch((error) => {
+                console.error("Error initializing asm.js instance:", error);
+                reject(error); // 初始化失败
+            });
+        } catch (error) {
+            console.error("Unexpected error during asm.js initialization:", error);
+            reject(error); // 捕获异常
+        }
+    });
+}
 
 function shouldUseWasmModule (): boolean {
     if (NATIVE_CODE_BUNDLE_MODE === (NativeCodeBundleMode.BOTH as number)) {
@@ -109,13 +139,8 @@ export function waitForSpineWasmInstantiation (): Promise<void> {
                 { default: spineWasmUrl },
             ]) => initWasm(wasmFactory, spineWasmUrl));
         } else {
-            return Promise.all([
-                import('external:emscripten/spine/spine.asm.js'),
-                import('external:emscripten/spine/spine.js.mem'),
-            ]).then(([
-                { default: asmFactory },
-                { default: asmJsMemUrl },
-            ]) => initAsmJS(asmFactory, asmJsMemUrl));
+            return import('external:emscripten/spine/spine.asm.js')
+                .then(({ default: asmFactory }) => initAsmJSWithoutMem(asmFactory));
         }
     }).catch(errorReport);
 }

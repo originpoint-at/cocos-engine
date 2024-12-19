@@ -374,7 +374,7 @@ interface IFileDataMap {
 }
 
 type IFileData = MapEnum<{
-    [x in keyof IFileDataMap as `${x}`]: IFileDataMap[x];
+    [x in keyof IFileDataMap]: IFileDataMap[x];
 }, 11 /* Currently we should manually specify the enumerators count. */>;
 
 type IRuntimeFileDataMap = Omit<IFileDataMap, File.Version> & {
@@ -385,7 +385,7 @@ type IRuntimeFileDataMap = Omit<IFileDataMap, File.Version> & {
  * At runtime, we intruded the original file data and injected some helpers.
  */
 export type IRuntimeFileData = MapEnum<{
-    [x in keyof IRuntimeFileDataMap as `${x}`]: IRuntimeFileDataMap[x];
+    [x in keyof IRuntimeFileDataMap]: IRuntimeFileDataMap[x];
 }, 11 /* Currently we should manually specify the enumerators count. */>;
 
 type IDeserializeInput = IFileData | IRuntimeFileData;

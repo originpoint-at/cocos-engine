@@ -138,8 +138,9 @@ namespace emscripten { namespace internal { \
 #define GETTER_RVAL_TO_PTR(ClassType, Method, ReturnType) \
     optional_override([](ClassType &obj) { return const_cast<ReturnType>(&obj.Method()); })
 
-
+DEFINE_SPINE_CLASS_TYPEID(Color)
 DEFINE_SPINE_CLASS_TYPEID(ConstraintData)
+DEFINE_SPINE_CLASS_TYPEID(EventData)
 DEFINE_SPINE_CLASS_TYPEID(IkConstraintData)
 DEFINE_SPINE_CLASS_TYPEID(PathConstraintData)
 DEFINE_SPINE_CLASS_TYPEID(Attachment)
@@ -152,9 +153,6 @@ DEFINE_SPINE_CLASS_TYPEID(PointAttachment)
 DEFINE_SPINE_CLASS_TYPEID(RegionAttachment)
 DEFINE_SPINE_CLASS_TYPEID(AttachmentLoader)
 DEFINE_SPINE_CLASS_TYPEID(AtlasAttachmentLoader)
-DEFINE_SPINE_CLASS_TYPEID(Interpolation)
-DEFINE_SPINE_CLASS_TYPEID(PowInterpolation)
-DEFINE_SPINE_CLASS_TYPEID(PowOutInterpolation)
 DEFINE_SPINE_CLASS_TYPEID(Updatable)
 DEFINE_SPINE_CLASS_TYPEID(IkConstraint)
 DEFINE_SPINE_CLASS_TYPEID(PathConstraint)
@@ -167,7 +165,7 @@ DEFINE_SPINE_CLASS_TYPEID(TranslateTimeline)
 DEFINE_SPINE_CLASS_TYPEID(ScaleTimeline)
 DEFINE_SPINE_CLASS_TYPEID(ShearTimeline)
 DEFINE_SPINE_CLASS_TYPEID(RotateTimeline)
-DEFINE_SPINE_CLASS_TYPEID(ColorTimeline)
+DEFINE_SPINE_CLASS_TYPEID(RGBATimeline)
 DEFINE_SPINE_CLASS_TYPEID(TwoColorTimeline)
 DEFINE_SPINE_CLASS_TYPEID(AttachmentTimeline)
 DEFINE_SPINE_CLASS_TYPEID(DeformTimeline)
@@ -177,9 +175,9 @@ DEFINE_SPINE_CLASS_TYPEID(IkConstraintTimeline)
 DEFINE_SPINE_CLASS_TYPEID(TransformConstraintTimeline)
 DEFINE_SPINE_CLASS_TYPEID(PathConstraintPositionTimeline)
 DEFINE_SPINE_CLASS_TYPEID(PathConstraintMixTimeline)
-DEFINE_SPINE_CLASS_TYPEID(VertexEffect)
-DEFINE_SPINE_CLASS_TYPEID(JitterVertexEffect)
-DEFINE_SPINE_CLASS_TYPEID(SwirlVertexEffect)
+//DEFINE_SPINE_CLASS_TYPEID(VertexEffect)
+//DEFINE_SPINE_CLASS_TYPEID(JitterVertexEffect)
+//DEFINE_SPINE_CLASS_TYPEID(SwirlVertexEffect)
 
 
 DEFINE_ALLOW_RAW_POINTER(BoneData)
@@ -187,6 +185,7 @@ DEFINE_ALLOW_RAW_POINTER(Bone)
 DEFINE_ALLOW_RAW_POINTER(Slot)
 DEFINE_ALLOW_RAW_POINTER(SlotData)
 DEFINE_ALLOW_RAW_POINTER(VertexAttachment)
+DEFINE_ALLOW_RAW_POINTER(Attachment)
 DEFINE_ALLOW_RAW_POINTER(Color)
 DEFINE_ALLOW_RAW_POINTER(EventData)
 DEFINE_ALLOW_RAW_POINTER(Skeleton)
@@ -269,11 +268,11 @@ struct GetterPolicy<GetterReturnType (GetterThisType::*)()> {
     using Binding = internal::BindingType<ReturnType>;
     using WireType = typename Binding::WireType;
 
-    // template<typename ClassType, typename ReturnPolicy>
-    template<typename ClassType>
+    template<typename ClassType, typename ReturnPolicy>
+    //template<typename ClassType>
     static WireType get(const Context& context, ClassType& ptr) {
-        // return Binding::toWireType(((ptr.*context)()), ReturnPolicy{});
-        return Binding::toWireType(((ptr.*context)()));
+        return Binding::toWireType(((ptr.*context)()), ReturnPolicy{});
+        //return Binding::toWireType(((ptr.*context)()));
     }
 
     static void* getContext(Context context) {
@@ -308,7 +307,7 @@ struct BindingType<String> {
         size_t length;
         T data[1]; // trailing data
     } *;
-    static WireType toWireType(const String& v) {
+    static WireType toWireType(const String& v,emscripten::internal::rvp::default_tag) {
         auto* wt = static_cast<WireType>(malloc(sizeof(size_t) + v.length() * sizeof(T)));
         wt->length = v.length();
         memcpy(wt->data, v.buffer(), v.length() * sizeof(T));
@@ -495,12 +494,12 @@ EMSCRIPTEN_BINDINGS(spine) {
 
 	_embind_register_std_string(TypeID<spine::String>::get(), "std::string");
 
-    REGISTER_SPINE_ENUM(TimelineType);
+    //REGISTER_SPINE_ENUM(TimelineType);
     REGISTER_SPINE_ENUM(MixDirection);
     REGISTER_SPINE_ENUM(MixBlend);
     REGISTER_SPINE_ENUM(EventType);
     REGISTER_SPINE_ENUM(BlendMode);
-    REGISTER_SPINE_ENUM(TransformMode);
+    REGISTER_SPINE_ENUM(Inherit);
     REGISTER_SPINE_ENUM(PositionMode);
     REGISTER_SPINE_ENUM(SpacingMode);
     REGISTER_SPINE_ENUM(RotateMode);
@@ -575,34 +574,36 @@ EMSCRIPTEN_BINDINGS(spine) {
     class_<ConstraintData>("ConstraintData")
         .constructor<const String &>()
         .property("name", &ConstraintData::getName)
-        .property("order", &ConstraintData::_order)
-        .property("skinRequired", &ConstraintData::_skinRequired);
+        .property("order", &ConstraintData::getOrder, &ConstraintData::setOrder)
+        .property("skinRequired", &ConstraintData::isSkinRequired, &ConstraintData::setSkinRequired);
 
     class_<IkConstraintData, base<ConstraintData>>("IkConstraintData")
         .constructor<const String &>()
         .function("getBones", optional_override([](IkConstraintData &obj) {
             return &obj.getBones(); }), allow_raw_pointer<SPVectorBoneDataPtr>()) 
-        .property("target", &IkConstraintData::_target)
-        .property("bendDirection", &IkConstraintData::_bendDirection)
-        .property("compress", &IkConstraintData::_compress)
-        .property("stretch", &IkConstraintData::_stretch)
-        .property("uniform", &IkConstraintData::_uniform)
-        .property("mix", &IkConstraintData::_mix)
-        .property("softness", &IkConstraintData::_softness);
+        .property("target", &IkConstraintData::getTarget, &IkConstraintData::setTarget)
+        .property("bendDirection", &IkConstraintData::getBendDirection, &IkConstraintData::setBendDirection)
+        .property("compress", &IkConstraintData::getCompress, &IkConstraintData::setCompress)
+        .property("stretch", &IkConstraintData::getStretch, &IkConstraintData::setStretch)
+        .property("uniform", &IkConstraintData::getUniform, &IkConstraintData::setUniform)
+        .property("mix", &IkConstraintData::getMix, &IkConstraintData::setMix)
+        .property("softness", &IkConstraintData::getSoftness, &IkConstraintData::setSoftness);
 
     class_<PathConstraintData, base<ConstraintData>>("PathConstraintData")
         .constructor<const String &>()
         .function("getBones",optional_override([](PathConstraintData &obj) {
             return &obj.getBones(); }), allow_raw_pointer<SPVectorBoneDataPtr>())
-        .property("target", &PathConstraintData::_target)
-        .property("positionMode", &PathConstraintData::_positionMode)
-        .property("spacingMode", &PathConstraintData::_spacingMode)
-        .property("rotateMode", &PathConstraintData::_rotateMode)
-        .property("offsetRotation", &PathConstraintData::_offsetRotation)
-        .property("position", &PathConstraintData::_position)
-        .property("spacing", &PathConstraintData::_spacing)
-        .property("rotateMix", &PathConstraintData::_rotateMix)
-        .property("translateMix", &PathConstraintData::_translateMix);
+        .property("target", &PathConstraintData::getTarget, &PathConstraintData::setTarget)
+        .property("positionMode", &PathConstraintData::getPositionMode, &PathConstraintData::setPositionMode)
+        .property("spacingMode", &PathConstraintData::getSpacingMode, &PathConstraintData::setSpacingMode)
+        .property("rotateMode", &PathConstraintData::getRotateMode, &PathConstraintData::setRotateMode)
+        .property("offsetRotation", &PathConstraintData::getOffsetRotation, &PathConstraintData::setOffsetRotation)
+        .property("position", &PathConstraintData::getPosition, &PathConstraintData::setPosition)
+        .property("spacing", &PathConstraintData::getSpacing, &PathConstraintData::setSpacing)
+        .property("mixRotate", &PathConstraintData::getMixRotate, &PathConstraintData::setMixRotate)
+        .property("mixX", &PathConstraintData::getMixX, &PathConstraintData::setMixX)
+		.property("mixY", &PathConstraintData::getMixY, &PathConstraintData::setMixY);
+		
 
     class_<SkeletonBounds>("SkeletonBounds")
         .constructor<>()
@@ -625,23 +626,23 @@ EMSCRIPTEN_BINDINGS(spine) {
 
     class_<Event>("Event")
         .constructor<float, const EventData &>()
-        .property("data", GETTER_RVAL_TO_PTR(Event, getData, EventData*))
-        .property("intValue", &Event::_intValue)
-        .property("floatValue", &Event::_floatValue)
-        .property("stringValue", &Event::_stringValue)
-        .property("time", &Event::_time)
-        .property("volume", &Event::_volume)
-        .property("balance", &Event::_balance);
+        .property("data", &Event::getData)
+        .property("intValue", &Event::getIntValue, &Event::setIntValue)
+        .property("floatValue", &Event::getFloatValue, &Event::setFloatValue)
+        .property("stringValue", &Event::getStringValue, &Event::setStringValue)
+        .property("time", &Event::getTime)
+        .property("volume", &Event::getVolume, &Event::setVolume)
+        .property("balance", &Event::getBalance, &Event::setBalance);
 
     class_<EventData>("EventData")
         .constructor<const String &>()
         .property("name", &EventData::getName)
-        .property("intValue", &EventData::_intValue)
-        .property("floatValue", &EventData::_floatValue)
-        .property("stringValue", &EventData::_stringValue)
-        .property("audioPath", &EventData::_audioPath)
-        .property("volume", &EventData::_volume)
-        .property("balance", &EventData::_balance);
+        .property("intValue", &EventData::getIntValue, &EventData::setIntValue)
+        .property("floatValue", &EventData::getFloatValue, &EventData::setFloatValue)
+        .property("stringValue", &EventData::getStringValue, &EventData::setStringValue)
+        .property("audioPath", &EventData::getAudioPath, &EventData::setAudioPath)
+        .property("volume", &EventData::getVolume, &EventData::setVolume)
+        .property("balance", &EventData::getBalance, &EventData::setBalance);
 
     class_<Attachment>("Attachment")
         .property("name", &Attachment::getName);
@@ -653,8 +654,8 @@ EMSCRIPTEN_BINDINGS(spine) {
             return &obj.getBones(); }), allow_raw_pointer<SPVectorSize_t>())
         .function("getVertices", optional_override([](VertexAttachment &obj){
             return &obj.getVertices(); }), allow_raw_pointer<SPVectorFloat>())
-        .property("worldVerticesLength", &VertexAttachment::_worldVerticesLength)
-        .property("deformAttachment", &VertexAttachment::_deformAttachment)
+        .property("worldVerticesLength", &VertexAttachment::getWorldVerticesLength, &VertexAttachment::setWorldVerticesLength)
+        .property("timelineAttachment", &VertexAttachment::getTimelineAttachment, &VertexAttachment::setTimelineAttachment)
         .function("computeWorldVertices", select_overload<void(Slot&, size_t, size_t, Vector<float>&, size_t, size_t)>
         (&VertexAttachment::computeWorldVertices), allow_raw_pointer<SPVectorFloat>())
         .function("copyTo", &VertexAttachment::copyTo, allow_raw_pointers());
@@ -671,22 +672,28 @@ EMSCRIPTEN_BINDINGS(spine) {
 
     class_<MeshAttachment, base<VertexAttachment>>("MeshAttachment")
         .constructor<const String &>()
-        .property("path", &MeshAttachment::_path)
+        .property("path", &MeshAttachment::getPath, &MeshAttachment::setPath)
         .function("getRegionUVs", optional_override([](MeshAttachment &obj) {
             return &obj.getRegionUVs(); }), allow_raw_pointer<SPVectorFloat>())
         .function("getUVs", optional_override([](MeshAttachment &obj) { 
             return &obj.getUVs(); }), allow_raw_pointer<SPVectorFloat>())
         .function("getTriangles", optional_override([](MeshAttachment &obj) {
             return &obj.getTriangles(); }), allow_raw_pointer<SPVectorUnsignedShort>())
-        .property("color", GETTER_RVAL_TO_PTR(MeshAttachment, getColor, Color*))
-        .property("width", &MeshAttachment::_width)
-        .property("height", &MeshAttachment::_height)
-        .property("hullLength", &MeshAttachment::_hullLength)
+        .property("color", &MeshAttachment::getColor)
+        .property("width", &MeshAttachment::getWidth, &MeshAttachment::setWidth)
+        .property("height", &MeshAttachment::getHeight, &MeshAttachment::setHeight)
+        .property("hullLength", &MeshAttachment::getHullLength, &MeshAttachment::setHullLength)
         .function("getEdges", optional_override([](MeshAttachment &obj) {
             return &obj.getEdges(); }), allow_raw_pointer<SPVectorUnsignedShort>())
-        .function("updateUVs", &MeshAttachment::updateUVs)
+        .function("getRegion", &MeshAttachment::getRegion, allow_raw_pointers())
+        .function("setRegion", &MeshAttachment::setRegion, allow_raw_pointers())
+        .function("getSequence", &MeshAttachment::getSequence, allow_raw_pointers())
+        .function("setSequence", &MeshAttachment::setSequence, allow_raw_pointers())
+        .function("updateRegion", &MeshAttachment::updateRegion)
         .function("getParentMesh", &MeshAttachment::getParentMesh, allow_raw_pointers())
         .function("setParentMesh", &MeshAttachment::setParentMesh, allow_raw_pointers())
+        .function("computeWorldVertices", select_overload<void(Slot&, size_t, size_t, Vector<float>&, size_t, size_t)>
+        (&MeshAttachment::computeWorldVertices), allow_raw_pointer<SPVectorFloat>())
         .function("copy", &MeshAttachment::copy, allow_raw_pointers())
         .function("newLinkedMesh", &MeshAttachment::newLinkedMesh, allow_raw_pointers());
 
@@ -694,15 +701,15 @@ EMSCRIPTEN_BINDINGS(spine) {
         .constructor<const String &>()
         .function("getLengths", optional_override([](PathAttachment &obj) {
             return &obj.getLengths(); }), allow_raw_pointer<SPVectorFloat>())
-        .property("closed", &PathAttachment::_closed)
-        .property("constantSpeed", &PathAttachment::_constantSpeed)
+        .property("closed", &PathAttachment::isClosed, &PathAttachment::setClosed)
+        .property("constantSpeed", &PathAttachment::isConstantSpeed, &PathAttachment::setConstantSpeed)
         .function("copy", &PathAttachment::copy, allow_raw_pointers());
 
     class_<PointAttachment, base<Attachment>>("PointAttachment")
         .constructor<const String &>()
-        .property("x", &PointAttachment::_x)
-        .property("y", &PointAttachment::_y)
-        .property("rotation", &PointAttachment::_rotation)
+        .property("x", &PointAttachment::getX, &PointAttachment::setX)
+        .property("y", &PointAttachment::getY, &PointAttachment::setY)
+        .property("rotation", &PointAttachment::getRotation, &PointAttachment::setRotation)
         .function("computeWorldPosition", optional_override([](PointAttachment &obj, Bone &bone, float ox, float oy) {
             obj.computeWorldPosition(bone, ox, oy);}))
         .function("computeWorldRotation", &PointAttachment::computeWorldRotation)
@@ -710,23 +717,22 @@ EMSCRIPTEN_BINDINGS(spine) {
 
     class_<RegionAttachment, base<Attachment>>("RegionAttachment")
         .constructor<const String &>()
-        .property("x", &RegionAttachment::_x)
-        .property("y", &RegionAttachment::_y)
-        .property("scaleX", &RegionAttachment::_scaleX)
-        .property("scaleY", &RegionAttachment::_scaleY)
-        .property("rotation", &RegionAttachment::_rotation)
-        .property("width", &RegionAttachment::_width)
-        .property("height", &RegionAttachment::_height)
-        .property("color", GETTER_RVAL_TO_PTR(RegionAttachment, getColor, Color*))
-        .property("path", &RegionAttachment::_path)
-        //FIXME(cjh): .function("getRendererObject", &RegionAttachment::getRendererObject, allow_raw_pointers())
+        .property("x", &RegionAttachment::getX, &RegionAttachment::setX)
+        .property("y", &RegionAttachment::getY, &RegionAttachment::setY)
+        .property("scaleX", &RegionAttachment::getScaleX, &RegionAttachment::setScaleX)
+        .property("scaleY", &RegionAttachment::getScaleY, &RegionAttachment::setScaleY)
+        .property("rotation", &RegionAttachment::getRotation, &RegionAttachment::setRotation)
+        .property("width", &RegionAttachment::getWidth, &RegionAttachment::setWidth)
+        .property("height", &RegionAttachment::getHeight, &RegionAttachment::setHeight)
+        .property("color", &RegionAttachment::getColor)
+        .property("path", &RegionAttachment::getPath)
+        .function("getRegion", &RegionAttachment::getRegion, allow_raw_pointers())
         .function("getOffset", optional_override([](RegionAttachment &obj) {
             return &obj.getOffset(); }), allow_raw_pointer<SPVectorFloat>())
-        .function("setUVs", &RegionAttachment::setUVs)
         .function("getUVs", optional_override([](RegionAttachment &obj) {
             return &obj.getUVs(); }), allow_raw_pointer<SPVectorFloat>())
-        .function("updateOffset", &RegionAttachment::updateOffset)
-        .function("computeWorldVertices", select_overload<void(Bone&, Vector<float>&, size_t, size_t)>
+        .function("updateRegion", &RegionAttachment::updateRegion)
+        .function("computeWorldVertices", select_overload<void(Slot&, Vector<float>&, size_t, size_t)>
         (&RegionAttachment::computeWorldVertices), allow_raw_pointer<SPVectorFloat>())
         .function("copy", &RegionAttachment::copy, allow_raw_pointer<Attachment>());
 
@@ -764,9 +770,7 @@ EMSCRIPTEN_BINDINGS(spine) {
         .function("getName", optional_override([] (AtlasRegion &obj) { return obj.name; }))
         .property("x", &AtlasRegion::x)
         .property("y", &AtlasRegion::y)
-        .property("index", &AtlasRegion::index)
-        .property("rotate", &AtlasRegion::rotate)
-        .property("degrees", &AtlasRegion::degrees);
+        .property("index", &AtlasRegion::index);
         //.property("texture", &AtlasRegion::height)
 
     class_<TextureLoader>("TextureLoader");
@@ -787,10 +791,10 @@ EMSCRIPTEN_BINDINGS(spine) {
         .constructor<int, const String &, BoneData &>()
         .property("index", &SlotData::getIndex)
         .property("name", &SlotData::getName)
-        .property("boneData", GETTER_RVAL_TO_PTR(SlotData, getBoneData, BoneData*))
-        .property("color", GETTER_RVAL_TO_PTR(SlotData, getColor, Color*))
-        .property("darkColor", GETTER_RVAL_TO_PTR(SlotData, getDarkColor, Color*))
-        .property("blendMode", &SlotData::_blendMode);
+        .property("boneData", &SlotData::getBoneData)
+        .property("color", &SlotData::getColor)
+        .property("darkColor", &SlotData::getDarkColor)
+        .property("blendMode", &SlotData::getBlendMode, &SlotData::setBlendMode);
 
     class_<Updatable>("Updatable")
         .function("update", &Updatable::update, pure_virtual())
@@ -800,29 +804,36 @@ EMSCRIPTEN_BINDINGS(spine) {
 
     class_<IkConstraint, base<Updatable>>("IkConstraint")
         .constructor<IkConstraintData &, Skeleton &>()
-        .property("data", GETTER_RVAL_TO_PTR(IkConstraint, getData, IkConstraintData*))
+        .property("data", &IkConstraint::getData)
         .function("getBones", optional_override([](IkConstraint &obj) {
             return &obj.getBones(); }), allow_raw_pointer<SPVectorBonePtr>())
-        .property("target", &IkConstraint::_target)
-        .property("bendDirection", &IkConstraint::_bendDirection)
-        .property("compress", &IkConstraint::_compress)
-        .property("stretch", &IkConstraint::_stretch)
-        .property("mix", &IkConstraint::_mix)
-        .property("softness", &IkConstraint::_softness)
+        .property("target", &IkConstraint::getTarget)
+        .property("bendDirection", &IkConstraint::getBendDirection)
+        .property("compress", &IkConstraint::getCompress)
+        .property("stretch", &IkConstraint::getStretch)
+        .property("mix", &IkConstraint::getMix)
+        .property("softness", &IkConstraint::getSoftness)	
+        .function("setActive", &IkConstraint::setActive)
+        .function("isActive", &IkConstraint::isActive)
+		.function("setToSetupPose", &IkConstraint::setToSetupPose)
         .class_function("apply1", select_overload<void (Bone &, float, float, bool, bool, bool, float)>(&IkConstraint::apply))
-        .class_function("apply2", select_overload<void (Bone &, Bone &, float, float, int, bool, float, float)>(&IkConstraint::apply))
+        .class_function("apply2", select_overload<void (Bone &, Bone &, float, float, int, bool, bool, float, float)>(&IkConstraint::apply))
         ;
 
     class_<PathConstraint, base<Updatable>>("PathConstraint")
         .constructor<PathConstraintData &, Skeleton &>()
-        .property("data", GETTER_RVAL_TO_PTR(PathConstraint, getData, PathConstraintData*))
+        .property("data", &PathConstraint::getData)
         .function("getBones", optional_override([](PathConstraint &obj) {
             return &obj.getBones(); }), allow_raw_pointer<SPVectorBonePtr>())
-        .property("target", &PathConstraint::_target)
-        .property("position", &PathConstraint::_position)
-        .property("spacing", &PathConstraint::_spacing)
-        .property("rotateMix", &PathConstraint::_rotateMix)
-        .property("translateMix", &PathConstraint::_translateMix)
+        .property("target", &PathConstraint::getTarget)
+        .property("position", &PathConstraint::getPosition)
+        .property("spacing", &PathConstraint::getSpacing)
+        .property("mixRotate", &PathConstraint::getMixRotate)
+        .property("mixX", &PathConstraint::getMixX)
+		.property("mixY", &PathConstraint::getMixY)
+        .function("isActive", &PathConstraint::isActive)
+        .function("setActive", &PathConstraint::setActive)
+		.function("setToSetupPose", &PathConstraint::setToSetupPose)
         ;
 
     class_<TransformConstraintData, base<ConstraintData>>("TransformConstraintData")
@@ -830,10 +841,12 @@ EMSCRIPTEN_BINDINGS(spine) {
         .function("getBones", optional_override([](TransformConstraintData &obj) { 
             return &obj.getBones(); }), allow_raw_pointer<SPVectorBoneDataPtr>())
         .property("target", &TransformConstraintData::getTarget)
-        .property("rotateMix", &TransformConstraintData::getRotateMix)
-        .property("translateMix", &TransformConstraintData::getTranslateMix)
-        .property("scaleMix", &TransformConstraintData::getScaleMix)
-        .property("shearMix", &TransformConstraintData::getShearMix)
+        .property("mixRotate", &TransformConstraintData::getMixRotate)
+        .property("getMixX", &TransformConstraintData::getMixX)
+		.property("getMixY", &TransformConstraintData::getMixY)
+        .property("mixScaleX", &TransformConstraintData::getMixScaleX)
+		.property("mixScaleY", &TransformConstraintData::getMixScaleY)
+        .property("mixShearY", &TransformConstraintData::getMixShearY)
         .property("offsetRotation", &TransformConstraintData::getOffsetRotation)
         .property("offsetX", &TransformConstraintData::getOffsetX)
         .property("offsetY", &TransformConstraintData::getOffsetY)
@@ -845,52 +858,57 @@ EMSCRIPTEN_BINDINGS(spine) {
 
     class_<TransformConstraint, base<Updatable>>("TransformConstraint")
         .constructor<TransformConstraintData &, Skeleton &>()
-        .property("data",  GETTER_RVAL_TO_PTR(TransformConstraint, getData, TransformConstraintData*))
+        .property("data", &TransformConstraint::getData)
         .function("getBones", optional_override([](TransformConstraint &obj) {
             return &obj.getBones(); }), allow_raw_pointer<SPVectorBonePtr>())
         .property("target", &TransformConstraint::getTarget)
-        .property("rotateMix", &TransformConstraint::_rotateMix)
-        .property("translateMix", &TransformConstraint::_translateMix)
-        .property("scaleMix", &TransformConstraint::_scaleMix)
-        .property("shearMix", &TransformConstraint::_shearMix)
+        .property("mixRotate", &TransformConstraint::getMixRotate)
+        .property("mixX", &TransformConstraint::getMixX)
+		.property("mixY", &TransformConstraint::getMixY)
+        .property("mixScaleX", &TransformConstraint::getMixScaleX)
+		.property("mixScaleY", &TransformConstraint::getMixScaleY)
+        .property("mixShearY", &TransformConstraint::getMixShearY)
+		.function("isActive", &PathConstraint::isActive)
+        .function("setActive", &PathConstraint::setActive)
+		.function("setToSetupPose", &PathConstraint::setToSetupPose)
         ;
 
     class_<Bone, base<Updatable>>("Bone")
         .constructor<BoneData &, Skeleton &, Bone *>()
-        .property("data", GETTER_RVAL_TO_PTR(Bone, getData, BoneData*))
-        .property("skeleton",  GETTER_RVAL_TO_PTR(Bone, getSkeleton, Skeleton*))
+        .property("data", &Bone::getData)
+        .property("skeleton", &Bone::getSkeleton)
         .property("parent", &Bone::getParent)
         .function("getChildren", optional_override([](Bone &obj) {
             return &obj.getChildren(); }), allow_raw_pointer<SPVectorBonePtr>())
-        .property("x", &Bone::_x)
-        .property("y", &Bone::_y)
-        .property("rotation", &Bone::_rotation)
-        .property("scaleX", &Bone::_scaleX)
-        .property("scaleY", &Bone::_scaleY)
-        .property("shearX", &Bone::_shearX)
-        .property("shearY", &Bone::_shearY)
-        .property("ax", &Bone::_ax)
-        .property("ay", &Bone::_ay)
-        .property("arotation", &Bone::_arotation)
-        .property("ascaleX", &Bone::_ascaleX)
-        .property("ascaleY", &Bone::_ascaleY)
-        .property("ashearX", &Bone::_ashearX)
-        .property("ashearY", &Bone::_ashearY)
-        .property("appliedValid", &Bone::_appliedValid)
-        .property("a", &Bone::_a)
-        .property("b", &Bone::_b)
-        .property("c", &Bone::_c)
-        .property("d", &Bone::_d)
-        .property("worldX", &Bone::_worldX)
-        .property("worldY", &Bone::_worldY)
-        
+        .property("x", &Bone::getX)
+        .property("y", &Bone::getY)
+        .property("rotation", &Bone::getRotation)
+        .property("scaleX", &Bone::getScaleX)
+        .property("scaleY", &Bone::getScaleY)
+        .property("shearX", &Bone::getShearX)
+        .property("shearY", &Bone::getShearY)
+        .property("ax", &Bone::getAX, &Bone::setAX)
+        .property("ay", &Bone::getAY, &Bone::setAY)
+        .property("appliedRotation", &Bone::getAppliedRotation)
+        .property("ascaleX", &Bone::getAScaleX)
+        .property("ascaleY", &Bone::getAScaleY)
+        .property("ashearX", &Bone::getAShearX)
+        .property("ashearY", &Bone::getAShearY)
+        .property("a", &Bone::getA)
+        .property("b", &Bone::getB)
+        .property("c", &Bone::getC)
+        .property("d", &Bone::getD)
+        .property("worldX", &Bone::getWorldX)
+        .property("worldY", &Bone::getWorldY)
+        .property("inherit", &Bone::getInherit)        
         .function("updateWorldTransform", select_overload<void()>(&Bone::updateWorldTransform))
         .function("updateWorldTransformWith", select_overload<void(float, float, float, float, float, float, float)>(&Bone::updateWorldTransform))
-        .function("setToSetupPose", &Bone::setToSetupPose)
+        .function("updateAppliedTransform", select_overload<void()>(&Bone::updateAppliedTransform))
+		.function("setToSetupPose", &Bone::setToSetupPose)
         .function("getWorldRotationX", &Bone::getWorldRotationX)
         .function("getWorldRotationY", &Bone::getWorldRotationY)
         .function("getWorldScaleX", &Bone::getWorldScaleX)
-        .function("getWorldScaleY", &Bone::getWorldScaleY) 
+        .function("getWorldScaleY", &Bone::getWorldScaleY)
         .function("worldToLocal", optional_override([](Bone &obj, Vector2 &vec2) {
                 float outLocalX, outLocalY;
                 obj.worldToLocal(vec2.x, vec2.y, outLocalX, outLocalY);
@@ -907,6 +925,22 @@ EMSCRIPTEN_BINDINGS(spine) {
             }), 
             allow_raw_pointers()
         )
+		.function("worldToParent", optional_override([](Bone &obj, Vector2 &vec2) {
+                float outParentX, outParentY;
+                obj.worldToLocal(vec2.x, vec2.y, outParentX, outParentY);
+                vec2.x = outParentX;
+                vec2.y = outParentY;
+            }), 
+            allow_raw_pointers()
+        )
+		.function("parentToWorld", optional_override([](Bone &obj, Vector2 &vec2) {
+                float outX, outY;
+                obj.worldToLocal(vec2.x, vec2.y, outX, outY);
+                vec2.x = outX;
+                vec2.y = outY;
+            }), 
+            allow_raw_pointers()
+        )
         .function("worldToLocalRotation", &Bone::worldToLocalRotation)
         .function("localToWorldRotation", &Bone::localToWorldRotation)
         .function("rotateWorld", &Bone::rotateWorld);
@@ -915,31 +949,32 @@ EMSCRIPTEN_BINDINGS(spine) {
         .constructor<int, const String &, BoneData *>()
         .property("index", &BoneData::getIndex)
         .property("name",  &BoneData::getName) //FIXME(cjh): Don't copy string
-        .property("parent", &BoneData::_parent)
-        .property("length", &BoneData::_length)
-        .property("x", &BoneData::_x)
-        .property("y", &BoneData::_y)
-        .property("rotation", &BoneData::_rotation)
-        .property("scaleX", &BoneData::_scaleX)
-        .property("scaleY", &BoneData::_scaleY)
-        .property("shearX", &BoneData::_shearX)
-        .property("shearY", &BoneData::_shearY)
-        .property("transformMode", &BoneData::_transformMode)
-        .property("skinRequired", &BoneData::_skinRequired);
+        .property("parent", &BoneData::getParent)
+        .property("length", &BoneData::getLength, &BoneData::setLength)
+        .property("x", &BoneData::getX, &BoneData::setX)
+        .property("y", &BoneData::getY, &BoneData::setY)
+        .property("rotation", &BoneData::getRotation, &BoneData::setRotation)
+        .property("scaleX", &BoneData::getScaleX, &BoneData::setScaleX)
+        .property("scaleY", &BoneData::getScaleY, &BoneData::setScaleY)
+        .property("shearX", &BoneData::getShearX, &BoneData::setShearX)
+        .property("shearY", &BoneData::getShearY, &BoneData::setShearY)
+        .property("skinRequired", &BoneData::isSkinRequired, &BoneData::setSkinRequired);
 
 
     class_<Slot>("Slot")
         .constructor<SlotData &, Bone &>()
-        .property("data", GETTER_RVAL_TO_PTR(Slot, getData, SlotData*))
-        .property("bone", GETTER_RVAL_TO_PTR(Slot, getBone, Bone*))
-        .property("color", GETTER_RVAL_TO_PTR(Slot, getColor, Color*))
-        .property("darkColor", GETTER_RVAL_TO_PTR(Slot, getDarkColor, Color*))
-        .function("getDeform", GETTER_RVAL_TO_PTR(Slot, getDeform, SPVectorFloat*), allow_raw_pointers())
-        .function("getSkeleton", GETTER_RVAL_TO_PTR(Slot, getSkeleton, Skeleton*))
+        .property("data", &Slot::getData)
+        .property("bone", &Slot::getBone)
+        .property("color", &Slot::getColor)
+        .property("darkColor", &Slot::getDarkColor)
+        .function("getDeform", &Slot::getDeform)
+        .function("getSkeleton", &Slot::getSkeleton)
         .function("getAttachment", &Slot::getAttachment, allow_raw_pointers())
         .function("setAttachment", &Slot::setAttachment, allow_raw_pointers())
-        .function("setAttachmentTime", &Slot::setAttachmentTime)
-        .function("getAttachmentTime", &Slot::getAttachmentTime)
+        .function("getAttachmentState", &Slot::getAttachmentState)
+        .function("setAttachmentState", &Slot::setAttachmentState)
+        .function("getSequenceIndex", &Slot::getSequenceIndex)
+        .function("setSequenceIndex", &Slot::setSequenceIndex)
         .function("setToSetupPose", &Slot::setToSetupPose);
 
     class_<Skin>("Skin")
@@ -989,9 +1024,9 @@ EMSCRIPTEN_BINDINGS(spine) {
 
     class_<SkeletonClipping>("SkeletonClipping")
         .constructor<>()
-        .property("clippedVertices", GETTER_RVAL_TO_PTR(SkeletonClipping, getClippedVertices, SPVectorFloat*))
-        .property("clippedTriangles", GETTER_RVAL_TO_PTR(SkeletonClipping, getClippedTriangles, SPVectorUnsignedShort*))
-        .property("clippedUVs", GETTER_RVAL_TO_PTR(SkeletonClipping, getClippedUVs, SPVectorFloat*))
+        .property("clippedVertices", &SkeletonClipping::getClippedVertices)
+        .property("clippedTriangles", &SkeletonClipping::getClippedTriangles)
+        .property("clippedUVs", &SkeletonClipping::getClippedUVs)
         .function("clipStart", &SkeletonClipping::clipStart, allow_raw_pointers())
         .function("clipEndWithSlot", select_overload<void(Slot &)>(&SkeletonClipping::clipEnd))
         .function("clipEnd", select_overload<void()>(&SkeletonClipping::clipEnd))
@@ -999,14 +1034,14 @@ EMSCRIPTEN_BINDINGS(spine) {
 
     class_<SkeletonData>("SkeletonData")
         .constructor<>()
-        .property("name", &SkeletonData::_name)
+        .property("name", &SkeletonData::getName, &SkeletonData::setName)
         .function("getBones", optional_override([](SkeletonData &obj) {
             return &obj.getBones(); }), allow_raw_pointer<SPVectorBoneDataPtr>())
         .function("getSlots", optional_override([](SkeletonData &obj) {
             return &obj.getSlots(); }), allow_raw_pointer<SPVectorSlotDataPtr>())
         .function("getSkins", optional_override([](SkeletonData &obj) {
             return &obj.getSkins(); }), allow_raw_pointer<SPVectorSkinPtr>())
-        .property("defaultSkin", &SkeletonData::_defaultSkin)
+        .property("defaultSkin", &SkeletonData::getDefaultSkin, &SkeletonData::setDefaultSkin)
         .function("getEvents", optional_override([](SkeletonData &obj) {
             return &obj.getEvents(); }), allow_raw_pointer<SPVectorEventDataPtr>())
         .function("getAnimations", optional_override([](SkeletonData &obj) {
@@ -1017,27 +1052,25 @@ EMSCRIPTEN_BINDINGS(spine) {
             return &obj.getTransformConstraints(); }), allow_raw_pointer<SPVectorTransformConstraintDataPtr>())
         .function("getPathConstraints", optional_override([](SkeletonData &obj) {
             return &obj.getPathConstraints(); }), allow_raw_pointer<SPVectorPathConstraintDataPtr>())
-        .property("x", &SkeletonData::_x)
-        .property("y", &SkeletonData::_y)
-        .property("width", &SkeletonData::_width)
-        .property("height", &SkeletonData::_height)
-        .property("version", &SkeletonData::_version)
-        .property("hash", &SkeletonData::_hash)
-        .property("fps", &SkeletonData::_fps)
-        .property("imagesPath", &SkeletonData::_imagesPath)
-        .property("audioPath", &SkeletonData::_audioPath)
+        .property("x", &SkeletonData::getX, &SkeletonData::setX)
+        .property("y", &SkeletonData::getY, &SkeletonData::setY)
+        .property("width", &SkeletonData::getWidth, &SkeletonData::setWidth)
+        .property("height", &SkeletonData::getHeight, &SkeletonData::setHeight)
+        .property("version", &SkeletonData::getVersion, &SkeletonData::setVersion)
+        .property("hash", &SkeletonData::getHash, &SkeletonData::setHash)
+        .property("fps", &SkeletonData::getFps, &SkeletonData::setFps)
+        .property("imagesPath", &SkeletonData::getImagesPath, &SkeletonData::setImagesPath)
+        .property("audioPath", &SkeletonData::getAudioPath, &SkeletonData::setAudioPath)
 
         .function("findBone", &SkeletonData::findBone, allow_raw_pointers())
-        .function("findBoneIndex", &SkeletonData::findBoneIndex)
         .function("findSlot", &SkeletonData::findSlot, allow_raw_pointers())
-        .function("findSlotIndex", &SkeletonData::findSlotIndex)
+        
         .function("findSkin", &SkeletonData::findSkin, allow_raw_pointers())
         .function("findEvent", &SkeletonData::findEvent, allow_raw_pointers())
         .function("findAnimation", &SkeletonData::findAnimation, allow_raw_pointers())
         .function("findIkConstraint", &SkeletonData::findIkConstraint, allow_raw_pointers())
         .function("findTransformConstraint", &SkeletonData::findTransformConstraint, allow_raw_pointers())
-        .function("findPathConstraint", &SkeletonData::findPathConstraint, allow_raw_pointers())
-        .function("findPathConstraintIndex", &SkeletonData::findPathConstraintIndex);
+        .function("findPathConstraint", &SkeletonData::findPathConstraint, allow_raw_pointers());
 
     class_<Animation>("Animation")
         .constructor(optional_override([](const String &name, const emscripten::val &value, float duration) -> Animation* {
@@ -1053,65 +1086,82 @@ EMSCRIPTEN_BINDINGS(spine) {
         .function("getTimelines", optional_override([](Animation &obj) {
             return &obj.getTimelines(); }), allow_raw_pointer<SPVectorTimelinePtr>())
         .function("hasTimeline", &Animation::hasTimeline)
-        .property("duration", &Animation::_duration);
+        .property("duration", &Animation::getDuration, &Animation::setDuration);
 
     class_<Timeline>("Timeline")
-        .function("getPropertyId", &Timeline::getPropertyId, pure_virtual());
+        .function("getPropertyIds", &Timeline::getPropertyIds, pure_virtual());
 
     class_<CurveTimeline, base<Timeline>>("CurveTimeline")
         .function("getFrameCount", &CurveTimeline::getFrameCount)
         .function("setLinear", &CurveTimeline::setLinear)
         .function("setStepped", &CurveTimeline::setStepped)
-        .function("setCurve", &CurveTimeline::setCurve)
-        .function("getCurvePercent", &CurveTimeline::getCurvePercent)
-        .function("getCurveType", &CurveTimeline::getCurveType);
+        .function("setBezier", &CurveTimeline::setBezier)
+        .function("getBezierValue", &CurveTimeline::getBezierValue)
+        .function("getCurves", &CurveTimeline::getCurves);
+	class_<CurveTimeline1, base<CurveTimeline>>("CurveTimeline1")	    
+	    .function("setFrame", &CurveTimeline1::setFrame)
+		.function("getCurveValue", &CurveTimeline1::getCurveValue)
+		.function("getRelativeValue", &CurveTimeline1::getRelativeValue)
+		.function("getScaleValue", &CurveTimeline1::getScaleValue)
+		.function("getAbsoluteValue1", select_overload<float (float, float, MixBlend, float, float)>(&CurveTimeline1::getAbsoluteValue))
+		.function("getAbsoluteValue2", select_overload<float (float, float, MixBlend, float, float, float)>(&CurveTimeline1::getAbsoluteValue))
+				;
+	
+	class_<CurveTimeline2, base<CurveTimeline>>("CurveTimeline2")
+	    .function("setFrame", &CurveTimeline2::setFrame)
+		.function("getCurveValue", &CurveTimeline2::getCurveValue);
+		
+    class_<TranslateTimeline, base<CurveTimeline2>>("TranslateTimeline")
+        .constructor<size_t, size_t, int>()
+        .function("getBoneIndex", &TranslateTimeline::getBoneIndex)
+        .function("setBoneIndex", &TranslateTimeline::setBoneIndex)
+        .function("apply", &TranslateTimeline::apply,allow_raw_pointers());
 
-    class_<TranslateTimeline, base<CurveTimeline>>("TranslateTimeline")
-        .constructor<int>()
-        .class_property("ENTRIES", &TranslateTimeline::ENTRIES)
-        .function("setFrame", &TranslateTimeline::setFrame);
+    class_<ScaleTimeline, base<CurveTimeline2>>("ScaleTimeline")
+        .constructor<size_t, size_t, int>()
+		.function("getBoneIndex", &ScaleTimeline::getBoneIndex)
+        .function("setBoneIndex", &ScaleTimeline::setBoneIndex)
+        .function("apply", &ScaleTimeline::apply,allow_raw_pointers());
 
-    class_<ScaleTimeline, base<TranslateTimeline>>("ScaleTimeline")
-        .constructor<int>()
-        ;
+    class_<ShearTimeline, base<CurveTimeline2>>("ShearTimeline")
+        .constructor<size_t, size_t, int>()
+        .function("getBoneIndex", &ShearTimeline::getBoneIndex)
+        .function("setBoneIndex", &ShearTimeline::setBoneIndex)
+        .function("apply", &ShearTimeline::apply,allow_raw_pointers());
+    class_<RotateTimeline, base<CurveTimeline1>>("RotateTimeline")
+        .constructor<size_t, size_t, int>()
+        .function("getBoneIndex", &RotateTimeline::getBoneIndex)
+        .function("setBoneIndex", &RotateTimeline::setBoneIndex)
+        .function("apply", &RotateTimeline::apply,allow_raw_pointers());
 
-    class_<ShearTimeline, base<TranslateTimeline>>("ShearTimeline")
-        .constructor<int>()
-        ;
+    class_<RGBATimeline, base<CurveTimeline>>("ColorTimeline")
+        .constructor<size_t, size_t, int>()
+        .function("getPropertyIds", &RGBATimeline::getPropertyIds)
+        .property("slotIndex", &RGBATimeline::getSlotIndex, &RGBATimeline::setSlotIndex)
 
-    class_<RotateTimeline, base<CurveTimeline>>("RotateTimeline")
-        .constructor<int>()
-        //.class_property("ENTRIES", &RotateTimeline::ENTRIES) not bind
-        .property("boneIndex", &RotateTimeline::_boneIndex)
-        .function("getFrames", GETTER_RVAL_TO_PTR(RotateTimeline, getFrames, SPVectorFloat*), allow_raw_pointer<SPVectorFloat>())
-        .function("setFrame", &RotateTimeline::setFrame);
-
-    class_<ColorTimeline, base<CurveTimeline>>("ColorTimeline")
-        .constructor<int>()
-        .class_property("ENTRIES", &ColorTimeline::ENTRIES) 
-        .property("slotIndex", &ColorTimeline::_slotIndex)
-
-        .function("getFrames", GETTER_RVAL_TO_PTR(ColorTimeline, getFrames, SPVectorFloat*), allow_raw_pointer<SPVectorFloat>())
-        .function("setFrame", &ColorTimeline::setFrame);
+        .function("getFrames", GETTER_RVAL_TO_PTR(RGBATimeline, getFrames, SPVectorFloat*), allow_raw_pointer<SPVectorFloat>())
+        .function("setFrame", &RGBATimeline::setFrame);
 
     class_<TwoColorTimeline, base<CurveTimeline>>("TwoColorTimeline")
-        .constructor<int>()
-        .class_property("ENTRIES", &ColorTimeline::ENTRIES)
+        .constructor<int, size_t>()
+        .function("getPropertyIds", &TwoColorTimeline::getPropertyIds)
         .property("slotIndex", &TwoColorTimeline::getSlotIndex, &TwoColorTimeline::setSlotIndex)
         .function("setFrame", &TwoColorTimeline::setFrame);
 
     class_<AttachmentTimeline, base<Timeline>>("AttachmentTimeline")
-        .constructor<int>()
-        .property("slotIndex", &AttachmentTimeline::_slotIndex)
+        .constructor<size_t, int>()
+        .function("getPropertyIds", &AttachmentTimeline::getPropertyIds)
+        .property("slotIndex", &AttachmentTimeline::getSlotIndex, &AttachmentTimeline::setSlotIndex)
         .function("getFrames", GETTER_RVAL_TO_PTR(AttachmentTimeline, getFrames, SPVectorFloat*), allow_raw_pointer<SPVectorFloat>())
         .function("getAttachmentNames", &AttachmentTimeline::getAttachmentNames)
         .function("getFrameCount", &AttachmentTimeline::getFrameCount)
         .function("setFrame", &AttachmentTimeline::setFrame, allow_raw_pointers());
 
     class_<DeformTimeline, base<CurveTimeline>>("DeformTimeline")
-        .constructor<int>()
-        .property("slotIndex", &DeformTimeline::_slotIndex)
-        .property("attachment", &DeformTimeline::_attachment)
+        .constructor<size_t, size_t, int, VertexAttachment*>()
+        .function("getPropertyIds", &DeformTimeline::getPropertyIds)
+        .property("slotIndex", &DeformTimeline::getSlotIndex, &DeformTimeline::setSlotIndex)
+        .property("attachment", &DeformTimeline::getAttachment, &DeformTimeline::setAttachment)
         .function("getFrames", GETTER_RVAL_TO_PTR(DeformTimeline, getFrames, SPVectorFloat*), allow_raw_pointer<SPVectorFloat>())
         .function("getFrameVertices", optional_override([](DeformTimeline &obj) {
             return &obj.getVertices(); }), allow_raw_pointer<SPVectorVectorFloat>())
@@ -1127,6 +1177,7 @@ EMSCRIPTEN_BINDINGS(spine) {
 
     class_<EventTimeline, base<Timeline>>("EventTimeline")
         .constructor<int>()
+		.function("getPropertyIds", &EventTimeline::getPropertyIds)
         .function("getFrames", GETTER_RVAL_TO_PTR(EventTimeline, getFrames, SPVectorFloat*), allow_raw_pointer<SPVectorFloat>())
         .function("getEvents",  optional_override([](EventTimeline &obj) {
             return &obj.getEvents(); }), allow_raw_pointer<SPVectorEventPtr>())
@@ -1135,6 +1186,7 @@ EMSCRIPTEN_BINDINGS(spine) {
 
     class_<DrawOrderTimeline, base<Timeline>>("DrawOrderTimeline")
         .constructor<int>()
+		.function("getPropertyIds", &DrawOrderTimeline::getPropertyIds)
         .function("getFrames", GETTER_RVAL_TO_PTR(DrawOrderTimeline, getFrames, SPVectorFloat*), allow_raw_pointer<SPVectorFloat>())
         .function("getFrameCount", &DrawOrderTimeline::getFrameCount)
         .function("getDrawOrders", optional_override([](DrawOrderTimeline &obj) { 
@@ -1142,23 +1194,23 @@ EMSCRIPTEN_BINDINGS(spine) {
         .function("setFrame", &DrawOrderTimeline::setFrame, allow_raw_pointers());
 
     class_<IkConstraintTimeline, base<CurveTimeline>>("IkConstraintTimeline")
-        .constructor<int>()
-        .class_property("ENTRIES", &IkConstraintTimeline::ENTRIES)
+        .constructor<size_t, size_t,int>()
+        .function("getPropertyIds", &IkConstraintTimeline::getPropertyIds)
         .function("setFrame", &IkConstraintTimeline::setFrame);
 
     class_<TransformConstraintTimeline, base<CurveTimeline>>("TransformConstraintTimeline")
-        .constructor<int>()
-        .class_property("ENTRIES", &TransformConstraintTimeline::ENTRIES)
+        .constructor<size_t,size_t,int>()
+        .function("getPropertyIds", &TransformConstraintTimeline::getPropertyIds)
         .function("setFrame", &TransformConstraintTimeline::setFrame);
 
     class_<PathConstraintPositionTimeline, base<CurveTimeline>>("PathConstraintPositionTimeline")
-        .constructor<int>()
-        .class_property("ENTRIES", &TransformConstraintTimeline::ENTRIES)
+        .constructor<size_t,size_t,int>()
+        .function("getPropertyIds", &PathConstraintPositionTimeline::getPropertyIds)
         .function("setFrame", &PathConstraintPositionTimeline::setFrame);
 
     class_<PathConstraintMixTimeline, base<CurveTimeline>>("PathConstraintMixTimeline")
-        .constructor<int>()
-        .class_property("ENTRIES", &PathConstraintMixTimeline::ENTRIES)
+        .constructor<size_t,size_t,int>()
+		.function("getPropertyIds", &PathConstraintMixTimeline::getPropertyIds)
         ;
 
     class_<TrackEntry>("TrackEntry")
@@ -1169,30 +1221,32 @@ EMSCRIPTEN_BINDINGS(spine) {
         .property("mixingTo", &TrackEntry::getMixingTo)
         //.function("getProp_listener", &TrackEntry::listener)
         .property("trackIndex", &TrackEntry::getTrackIndex)
-        .property("loop", &TrackEntry::_loop)
-        .property("holdPrevious", &TrackEntry::_holdPrevious)
-        .property("eventThreshold", &TrackEntry::_eventThreshold)
-        .property("attachmentThreshold", &TrackEntry::_attachmentThreshold)
-        .property("drawOrderThreshold", &TrackEntry::_drawOrderThreshold)
-        .property("animationStart", &TrackEntry::_animationStart)
-        .property("animationEnd", &TrackEntry::_animationEnd)
+        .property("loop", &TrackEntry::getLoop, &TrackEntry::setLoop)
+        .property("holdPrevious", &TrackEntry::getHoldPrevious, &TrackEntry::setHoldPrevious)
+        .property("eventThreshold", &TrackEntry::getEventThreshold, &TrackEntry::setEventThreshold)
+        .property("mixAttachmentThreshold", &TrackEntry::getMixAttachmentThreshold, &TrackEntry::setMixAttachmentThreshold)
+        .property("alphaAttachmentThreshold", &TrackEntry::getAlphaAttachmentThreshold, &TrackEntry::setAlphaAttachmentThreshold)
+        .property("mixDrawOrderThreshold", &TrackEntry::getMixDrawOrderThreshold, &TrackEntry::setMixDrawOrderThreshold)
+        .property("animationStart", &TrackEntry::getAnimationStart, &TrackEntry::setAnimationStart)
+        .property("animationEnd", &TrackEntry::getAnimationEnd, &TrackEntry::setAnimationEnd)
         .property("animationLast", &TrackEntry::getAnimationLast, &TrackEntry::setAnimationLast)
-        .property("delay", &TrackEntry::_delay)
-        .property("trackTime", &TrackEntry::_trackTime)
-        .property("trackEnd", &TrackEntry::_trackEnd)
-        .property("timeScale", &TrackEntry::_timeScale)
-        .property("alpha", &TrackEntry::_alpha)
-        .property("mixTime", &TrackEntry::_mixTime)
-        .property("mixDuration", &TrackEntry::_mixDuration)
-        .property("mixBlend", &TrackEntry::_mixBlend)
-
+        .property("delay", &TrackEntry::getDelay, &TrackEntry::setDelay)
+        .property("trackTime", &TrackEntry::getTrackTime, &TrackEntry::setTrackTime)
+        .property("trackEnd", &TrackEntry::getTrackEnd, &TrackEntry::setTrackEnd)
+        .property("timeScale", &TrackEntry::getTimeScale, &TrackEntry::setTimeScale)
+        .property("alpha", &TrackEntry::getAlpha, &TrackEntry::setAlpha)
+        .property("mixTime", &TrackEntry::getMixTime, &TrackEntry::setMixTime)
+        .property("mixBlend", &TrackEntry::getMixBlend, &TrackEntry::setMixBlend)
+        .function("setMixDuration1", select_overload<void(float)>(&TrackEntry::setMixDuration))
+        .function("setMixDuration2", select_overload<void(float,float)>(&TrackEntry::setMixDuration))
+        .function("getMixDuration", &TrackEntry::getMixDuration)
         .function("getAnimationTime", &TrackEntry::getAnimationTime)
         .function("isComplete", &TrackEntry::isComplete)
         .function("resetRotationDirections", &TrackEntry::resetRotationDirections);
 
     class_<AnimationStateData>("AnimationStateData")
         .constructor<SkeletonData *>()
-        .property("defaultMix", &AnimationStateData::_defaultMix)
+        .property("defaultMix", &AnimationStateData::getDefaultMix, &AnimationStateData::setDefaultMix)
         .property("skeletonData", &AnimationStateData::getSkeletonData)
         .function("setMix", select_overload<void(const String&, const String&, float)>(&AnimationStateData::setMix), allow_raw_pointers())
         .function("setMixWith", select_overload<void (Animation*, Animation* , float)>(&AnimationStateData::setMix), allow_raw_pointers())
@@ -1264,23 +1318,22 @@ EMSCRIPTEN_BINDINGS(spine) {
         .function("getUpdateCacheList", optional_override([](Skeleton &obj){
             return &obj.getUpdateCacheList(); }), allow_raw_pointer<SPVectorUpdatablePtr>())
         .property("skin", &Skeleton::getSkin)
-        .property("color", GETTER_RVAL_TO_PTR(Skeleton, getColor, Color*))
-        .property("time", &Skeleton::_time)
-        .property("scaleX", &Skeleton::_scaleX)
-        .property("scaleY", &Skeleton::_scaleY)
-        .property("x", &Skeleton::_x)
-        .property("y", &Skeleton::_y)
+        .property("color", &Skeleton::getColor)
+        .property("time", &Skeleton::getTime, &Skeleton::setTime)
+        .property("scaleX", &Skeleton::getScaleX, &Skeleton::setScaleX)
+        .property("scaleY", &Skeleton::getScaleY, &Skeleton::setScaleY)
+        .property("x", &Skeleton::getX, &Skeleton::setX)
+        .property("y", &Skeleton::getY, &Skeleton::setY)
         
         .function("updateCache", &Skeleton::updateCache)
-        .function("updateWorldTransform", &Skeleton::updateWorldTransform)
+        .function("updateWorldTransform", select_overload<void(Physics)>(&Skeleton::updateWorldTransform))
+        .function("updateWorldTransformWithBone", select_overload<void(Physics,Bone*)>(&Skeleton::updateWorldTransform))
         .function("setToSetupPose", &Skeleton::setToSetupPose)
         .function("setBonesToSetupPose", &Skeleton::setBonesToSetupPose)
         .function("setSlotsToSetupPose", &Skeleton::setSlotsToSetupPose)
         .function("getRootBone", &Skeleton::getRootBone, allow_raw_pointer<Bone>())
         .function("findBone", &Skeleton::findBone, allow_raw_pointers())
-        .function("findBoneIndex", &Skeleton::findBoneIndex)
         .function("findSlot", &Skeleton::findSlot, allow_raw_pointers())
-        .function("findSlotIndex", &Skeleton::findSlotIndex)
         .function("setSkinByName", select_overload<void(const String &)>(&Skeleton::setSkin))
         .function("setSkin", static_cast<void (Skeleton::*)(Skin *)>(&Skeleton::setSkin), allow_raw_pointer<Skin>())
         .function("getAttachmentByName", select_overload<Attachment*(const String &, const String &)>(&Skeleton::getAttachment), allow_raw_pointers())
@@ -1306,35 +1359,6 @@ EMSCRIPTEN_BINDINGS(spine) {
     //.constructor<AttachmentLoader*>()
     //.function("setScale", &SkeletonJson::setScale);
     //.function("getError", &SkeletonJson::getError);
-
-    class_<VertexEffect>("VertexEffect")
-        .function("begin", &VertexEffect::begin, pure_virtual())
-        .function("transform", optional_override([](VertexEffect &obj, float x, float y) {
-            obj.transform(x, y); }), pure_virtual())
-        .function("end", &VertexEffect::end, pure_virtual());
-
-    class_<JitterVertexEffect, base<VertexEffect>>("JitterEffect")
-        .constructor<float, float>()
-        .property("jitterX", &JitterVertexEffect::_jitterX)
-        .property("jitterY", &JitterVertexEffect::_jitterY)
-        .function("begin", &JitterVertexEffect::begin)
-        .function("transform", optional_override([](VertexEffect &obj, float x, float y) {
-            obj.transform(x, y); }), pure_virtual())
-        .function("end", &JitterVertexEffect::end);
-
-    class_<SwirlVertexEffect, base<VertexEffect>>("SwirlEffect")
-        .constructor<float, Interpolation &>()
-        .function("begin", &SwirlVertexEffect::begin)
-        .function("transform", optional_override([](VertexEffect &obj, float x, float y) {
-            obj.transform(x, y); }), pure_virtual())
-        .function("end", &SwirlVertexEffect::end)
-        
-        .property("centerX", &SwirlVertexEffect::_centerX)
-        .property("centerY", &SwirlVertexEffect::_centerY)
-        .property("radius", &SwirlVertexEffect::_radius)
-        .property("angle", &SwirlVertexEffect::getAngle, &SwirlVertexEffect::setAngle)
-        .property("worldX", &SwirlVertexEffect::_worldX)
-        .property("worldY", &SwirlVertexEffect::_worldY);
 
     class_<SpineModel>("SpineModel")
         .property("vCount", &SpineModel::vCount)
@@ -1363,9 +1387,6 @@ EMSCRIPTEN_BINDINGS(spine) {
         .function("setPremultipliedAlpha", &SpineSkeletonInstance::setPremultipliedAlpha)
         .function("setUseTint", &SpineSkeletonInstance::setUseTint)
         .function("setColor", &SpineSkeletonInstance::setColor)
-        .function("setJitterEffect", &SpineSkeletonInstance::setJitterEffect, allow_raw_pointer<JitterVertexEffect *>())
-        .function("setSwirlEffect", &SpineSkeletonInstance::setSwirlEffect, allow_raw_pointer<SwirlVertexEffect *>())
-        .function("clearEffect", &SpineSkeletonInstance::clearEffect)
         .function("getAnimationState", &SpineSkeletonInstance::getAnimationState, allow_raw_pointer<AnimationState>())
         .function("setMix", &SpineSkeletonInstance::setMix)
         .function("setListener", &SpineSkeletonInstance::setListener)

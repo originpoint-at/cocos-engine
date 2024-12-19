@@ -58,7 +58,7 @@ Skeleton *SpineSkeletonInstance::initSkeleton(SkeletonData *data) {
     _animState = new AnimationState(_animStateData);
     _clipper = new SkeletonClipping();
     _skeleton->setToSetupPose();
-    _skeleton->updateWorldTransform();
+    _skeleton->updateWorldTransform(Physics_Pose);
     _animState->setRendererObject(this);
     _animState->setListener(animationCallback);
     return _skeleton;
@@ -74,7 +74,7 @@ TrackEntry *SpineSkeletonInstance::setAnimation(float trackIndex, const spine::S
     }
     auto *trackEntry = _animState->setAnimation(trackIndex, animation, loop);
     _animState->apply(*_skeleton);
-    _skeleton->updateWorldTransform();
+    _skeleton->updateWorldTransform(Physics_Update);
     return trackEntry;
 }
 
@@ -96,7 +96,7 @@ SpineModel *SpineSkeletonInstance::updateRenderData() {
     if (_userData.debugMode) {
         _debugShapes.clear();
     }
-    _skeleton->updateWorldTransform();
+    _skeleton->updateWorldTransform(Physics_Update);
     SpineMeshData::reset();
     _model->clearMeshes();
     if (_userData.useTint) {
@@ -126,9 +126,6 @@ void SpineSkeletonInstance::collectMeshData() {
     DEBUG_SHAPE_TYPE debugShapeType = DEBUG_SHAPE_TYPE::DEBUG_REGION;
 
     SlotMesh currMesh = globalMesh;
-    if (_effect) {
-        _effect->begin(*_skeleton);
-    }
     const Color& skeletonColor = _skeleton->getColor();
     for (uint32_t drawIdx = 0; drawIdx < slotCount; ++drawIdx) {
         auto* slot = slotArray[drawIdx];
@@ -150,7 +147,7 @@ void SpineSkeletonInstance::collectMeshData() {
         if (attachmentRTTI.isExactly(spine::RegionAttachment::rtti)) {
             debugShapeType = DEBUG_SHAPE_TYPE::DEBUG_REGION;
             auto *attachment = static_cast<spine::RegionAttachment *>(attachmentSlot);
-            auto *attachmentVertices = reinterpret_cast<AttachmentVertices *>(attachment->getRendererObject());
+            auto *attachmentVertices = reinterpret_cast<AttachmentVertices *>(attachment->getRegion()->rendererObject);
              
             auto& triangles = attachmentVertices->_triangles;
             auto vertCount = triangles->vertCount;
@@ -170,7 +167,7 @@ void SpineSkeletonInstance::collectMeshData() {
                 }
             }
             memcpy(indices, triangles->indices, ibSize);
-            attachment->computeWorldVertices(bone, (float *)vertices, 0, strideColor);
+            attachment->computeWorldVertices(*slot, (float *)vertices, 0, strideColor);
             currMesh.set((uint8_t *)vertices, indices, vertCount, indexCount);
             const Color& attachmentColor = attachment->getColor();
             color.r *= attachmentColor.r;
@@ -181,7 +178,7 @@ void SpineSkeletonInstance::collectMeshData() {
         } else if (attachmentRTTI.isExactly(spine::MeshAttachment::rtti)) {
             debugShapeType = DEBUG_SHAPE_TYPE::DEBUG_MESH;
             auto *attachment = static_cast<spine::MeshAttachment *>(attachmentSlot);
-            auto *attachmentVertices = static_cast<AttachmentVertices *>(attachment->getRendererObject());
+            auto *attachmentVertices = static_cast<AttachmentVertices *>(attachment->getRegion()->rendererObject);
 
             auto& triangles = attachmentVertices->_triangles;
             auto vertCount = triangles->vertCount;
@@ -258,36 +255,18 @@ void SpineSkeletonInstance::collectMeshData() {
                 float *uvs = clippedUVs.buffer();
 
                 V3F_T2F_C4B *vertices = (V3F_T2F_C4B *)currMesh.vBuf;
-                if (_effect) {
-                    for (int v = 0, vn = vertCount, vv = 0; v < vn; ++v, vv += 2) {
-                        vertices[v].vertex.x = verts[vv];
-                        vertices[v].vertex.y = verts[vv + 1];
-                        vertices[v].texCoord.u = uvs[vv];
-                        vertices[v].texCoord.v = uvs[vv + 1];
-                        _effect->transform(vertices[v].vertex.x, vertices[v].vertex.y);
-                        *((uint32_t *)&vertices[v].color) = light;
-                    }
-                } else {
-                    for (int v = 0, vn = vertCount, vv = 0; v < vn; ++v, vv += 2) {
-                        vertices[v].vertex.x = verts[vv];
-                        vertices[v].vertex.y = verts[vv + 1];
-                        vertices[v].texCoord.u = uvs[vv];
-                        vertices[v].texCoord.v = uvs[vv + 1];
-                        *((uint32_t *)&vertices[v].color) = light;
-                    }
+                for (int v = 0, vn = vertCount, vv = 0; v < vn; ++v, vv += 2) {
+                    vertices[v].vertex.x = verts[vv];
+                    vertices[v].vertex.y = verts[vv + 1];
+                    vertices[v].texCoord.u = uvs[vv];
+                    vertices[v].texCoord.v = uvs[vv + 1];
+                    *((uint32_t *)&vertices[v].color) = light;
                 }
             } else {
                 auto vertCount = currMesh.vCount;
                 V3F_T2F_C4B *vertex = (V3F_T2F_C4B *)currMesh.vBuf;
-                if (_effect) {
-                    for (int v = 0; v < vertCount; ++v) {
-                        _effect->transform(vertex[v].vertex.x, vertex[v].vertex.y);
-                        *((uint32_t *)&vertex[v].color) = light;
-                    }
-                } else {
-                    for (int v = 0; v < vertCount; ++v) {
-                        *((uint32_t *)&vertex[v].color) = light;
-                    }
+                for (int v = 0; v < vertCount; ++v) {
+                    *((uint32_t *)&vertex[v].color) = light;
                 }
             }
         } else {
@@ -311,40 +290,20 @@ void SpineSkeletonInstance::collectMeshData() {
                 float *uvs = clippedUVs.buffer();
 
                 V3F_T2F_C4B_C4B *vertices = (V3F_T2F_C4B_C4B *)currMesh.vBuf;
-                if (_effect) {
-                    for (int v = 0, vn = vertCount, vv = 0; v < vn; ++v, vv += 2) {
-                        vertices[v].vertex.x = verts[vv];
-                        vertices[v].vertex.y = verts[vv + 1];
-                        vertices[v].texCoord.u = uvs[vv];
-                        vertices[v].texCoord.v = uvs[vv + 1];
-                        _effect->transform(vertices[v].vertex.x, vertices[v].vertex.y);
-                        *((uint32_t *)&vertices[v].color) = light;
-                        *((uint32_t *)&vertices[v].color2) = dark;
-                    }
-                } else {
-                    for (int v = 0, vn = vertCount, vv = 0; v < vn; ++v, vv += 2) {
-                        vertices[v].vertex.x = verts[vv];
-                        vertices[v].vertex.y = verts[vv + 1];
-                        vertices[v].texCoord.u = uvs[vv];
-                        vertices[v].texCoord.v = uvs[vv + 1];
-                        *((uint32_t *)&vertices[v].color) = light;
-                        *((uint32_t *)&vertices[v].color2) = dark;
-                    }
+                for (int v = 0, vn = vertCount, vv = 0; v < vn; ++v, vv += 2) {
+                    vertices[v].vertex.x = verts[vv];
+                    vertices[v].vertex.y = verts[vv + 1];
+                    vertices[v].texCoord.u = uvs[vv];
+                    vertices[v].texCoord.v = uvs[vv + 1];
+                    *((uint32_t *)&vertices[v].color) = light;
+                    *((uint32_t *)&vertices[v].color2) = dark;
                 }
             } else {
                 auto vertCount = currMesh.vCount;
                 V3F_T2F_C4B_C4B *vertex = (V3F_T2F_C4B_C4B *)currMesh.vBuf; 
-                if (_effect) {
-                    for (int v = 0; v < vertCount; ++v) {
-                        _effect->transform(vertex[v].vertex.x, vertex[v].vertex.y);
-                        *((uint32_t *)&vertex[v].color) = light;
-                        *((uint32_t *)&vertex[v].color2) = dark;
-                    }
-                } else {
-                    for (int v = 0; v < vertCount; ++v) {
-                        *((uint32_t *)&vertex[v].color) = light;
-                        *((uint32_t *)&vertex[v].color2) = dark;
-                    }
+                for (int v = 0; v < vertCount; ++v) {
+                    *((uint32_t *)&vertex[v].color) = light;
+                    *((uint32_t *)&vertex[v].color2) = dark;
                 }
             }
         }
@@ -374,7 +333,6 @@ void SpineSkeletonInstance::collectMeshData() {
     }
 
     _clipper->clipEnd();
-    if (_effect) _effect->end();
 }
 
 void SpineSkeletonInstance::setPremultipliedAlpha(bool val) {
@@ -388,25 +346,14 @@ void SpineSkeletonInstance::setColor(float r, float g, float b, float a) {
     _userData.color.a = a;
 }
 
-void SpineSkeletonInstance::setJitterEffect(JitterVertexEffect *effect) {
-    _effect = effect;
-}
-
-void SpineSkeletonInstance::setSwirlEffect(SwirlVertexEffect *effect) {
-    _effect = effect;
-}
-
-void SpineSkeletonInstance::clearEffect() {
-    _effect = nullptr;
-}
-
 AnimationState *SpineSkeletonInstance::getAnimationState() {
     return _animState;
 }
 
-void SpineSkeletonInstance::setMix(const spine::String &from, const spine::String &to, float duration) {
-    _animStateData->setMix(from, to, duration);
+void SpineSkeletonInstance::setMix(const std::string &from, const std::string &to, float duration) {
+    _animStateData->setMix(from.c_str(), to.c_str(), duration);
 }
+
 
 void SpineSkeletonInstance::setTrackEntryListener(uint32_t trackId, TrackEntry *entry) {
     if (!entry->getRendererObject()) {
@@ -455,47 +402,42 @@ void SpineSkeletonInstance::resizeSlotRegion(const spine::String &slotName, uint
     }
     if (attachment->getRTTI().isExactly(spine::RegionAttachment::rtti)) {
         auto *region = static_cast<RegionAttachment *>(attachment);
-        region->setRegionWidth(width);
-        region->setRegionHeight(height);
-        region->setRegionOriginalWidth(width);
-        region->setRegionOriginalHeight(height);
         region->setWidth(width);
         region->setHeight(height);
-        region->setUVs(0, 0, 1.0f, 1.0f, false);
-        region->updateOffset();
-        auto *attachmentVertices = static_cast<AttachmentVertices *>(region->getRendererObject());
+        region->getRegion()->u = 0;
+        region->getRegion()->v = 0;
+        region->getRegion()->u2 = 1.0f;
+        region->getRegion()->v2 = 1.0f;
+        region->setRotation(0);
+        region->updateRegion();
+        auto attachmentVertices = static_cast<AttachmentVertices *>(region->getRegion()->rendererObject);
         if (createNew) {
             attachmentVertices = attachmentVertices->copy();
-            region->setRendererObject(attachmentVertices);
+            region->getRegion()->rendererObject = attachmentVertices;
         }
+  
         V3F_T2F_C4B *vertices = attachmentVertices->_triangles->verts;
-        const auto &UVs = region->getUVs();
+        auto &UVs = region->getUVs();
         for (int i = 0, ii = 0; i < 4; ++i, ii += 2) {
             vertices[i].texCoord.u = UVs[ii];
             vertices[i].texCoord.v = UVs[ii + 1];
         }
     } else if (attachment->getRTTI().isExactly(spine::MeshAttachment::rtti)) {
         auto *mesh = static_cast<MeshAttachment *>(attachment);
-        mesh->setRegionWidth(width);
-        mesh->setRegionHeight(height);
-        mesh->setRegionOriginalWidth(width);
-        mesh->setRegionOriginalHeight(height);
         mesh->setWidth(width);
         mesh->setHeight(height);
-        mesh->setRegionU(0);
-        mesh->setRegionV(0);
-        mesh->setRegionU2(1.0f);
-        mesh->setRegionV2(1.0f);
-        mesh->setRegionRotate(true);
-        mesh->setRegionDegrees(0);
-        mesh->updateUVs();
-        auto *attachmentVertices = static_cast<AttachmentVertices *>(mesh->getRendererObject());
+        mesh->getRegion()->u = 0;
+        mesh->getRegion()->v = 0;
+        mesh->getRegion()->u2 = 1.0f;
+        mesh->getRegion()->v2 = 1.0f;
+        mesh->updateRegion();
+        auto attachmentVertices = static_cast<AttachmentVertices *>(mesh->getRegion()->rendererObject);
         if (createNew) {
             attachmentVertices = attachmentVertices->copy();
-            mesh->setRendererObject(attachmentVertices);
+            mesh->getRegion()->rendererObject = attachmentVertices;
         }
         V3F_T2F_C4B *vertices = attachmentVertices->_triangles->verts;
-        const auto &UVs = mesh->getUVs();
+        auto &UVs = mesh->getUVs();
         for (size_t i = 0, ii = 0, nn = mesh->getWorldVerticesLength(); ii < nn; ++i, ii += 2) {
             vertices[i].texCoord.u = UVs[ii];
             vertices[i].texCoord.v = UVs[ii + 1];

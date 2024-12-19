@@ -1,16 +1,16 @@
 /******************************************************************************
  * Spine Runtimes License Agreement
- * Last updated January 1, 2020. Replaces all prior versions.
+ * Last updated July 28, 2023. Replaces all prior versions.
  *
- * Copyright (c) 2013-2020, Esoteric Software LLC
+ * Copyright (c) 2013-2023, Esoteric Software LLC
  *
  * Integration of the Spine Runtimes into software or otherwise creating
  * derivative works of the Spine Runtimes is permitted under the terms and
  * conditions of Section 2 of the Spine Editor License Agreement:
  * http://esotericsoftware.com/spine-editor-license
  *
- * Otherwise, it is permitted to integrate the Spine Runtimes into software
- * or otherwise create derivative works of the Spine Runtimes (collectively,
+ * Otherwise, it is permitted to integrate the Spine Runtimes into software or
+ * otherwise create derivative works of the Spine Runtimes (collectively,
  * "Products"), provided that each user of the Products must obtain their own
  * Spine Editor license and redistribution of the Products in any form must
  * include this license and copyright notice.
@@ -23,100 +23,109 @@
  * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES,
  * BUSINESS INTERRUPTION, OR LOSS OF USE, DATA, OR PROFITS) HOWEVER CAUSED AND
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
- * THE SPINE RUNTIMES, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THE
+ * SPINE RUNTIMES, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *****************************************************************************/
 
 #ifndef Spine_Animation_h
 #define Spine_Animation_h
 
+#include <spine/Vector.h>
 #include <spine/HashMap.h>
 #include <spine/MixBlend.h>
 #include <spine/MixDirection.h>
 #include <spine/SpineObject.h>
 #include <spine/SpineString.h>
-#include <spine/Vector.h>
+#include <spine/Property.h>
 
 namespace spine {
-class Timeline;
+	class Timeline;
 
-class Skeleton;
+	class Skeleton;
 
-class Event;
+	class Event;
 
-class SP_API Animation : public SpineObject {
-    friend class AnimationState;
+	class AnimationState;
 
-    friend class TrackEntry;
+	class SP_API Animation : public SpineObject {
+		friend class AnimationState;
 
-    friend class AnimationStateData;
+		friend class TrackEntry;
 
-    friend class AttachmentTimeline;
+		friend class AnimationStateData;
 
-    friend class ColorTimeline;
+		friend class AttachmentTimeline;
 
-    friend class DeformTimeline;
+		friend class RGBATimeline;
 
-    friend class DrawOrderTimeline;
+		friend class RGBTimeline;
 
-    friend class EventTimeline;
+		friend class AlphaTimeline;
 
-    friend class IkConstraintTimeline;
+		friend class RGBA2Timeline;
 
-    friend class PathConstraintMixTimeline;
+		friend class RGB2Timeline;
 
-    friend class PathConstraintPositionTimeline;
+		friend class DeformTimeline;
 
-    friend class PathConstraintSpacingTimeline;
+		friend class DrawOrderTimeline;
 
-    friend class RotateTimeline;
+		friend class EventTimeline;
 
-    friend class ScaleTimeline;
+		friend class IkConstraintTimeline;
 
-    friend class ShearTimeline;
+		friend class PathConstraintMixTimeline;
 
-    friend class TransformConstraintTimeline;
+		friend class PathConstraintPositionTimeline;
 
-    friend class TranslateTimeline;
+		friend class PathConstraintSpacingTimeline;
 
-    friend class TwoColorTimeline;
+		friend class RotateTimeline;
 
-public:
-    Animation(const String &name, Vector<Timeline *> &timelines, float duration);
+		friend class ScaleTimeline;
 
-    ~Animation();
+		friend class ShearTimeline;
 
-    /// Applies all the animation's timelines to the specified skeleton.
-    /// See also Timeline::apply(Skeleton&, float, float, Vector, float, MixPose, MixDirection)
-    void apply(Skeleton &skeleton, float lastTime, float time, bool loop, Vector<Event *> *pEvents, float alpha,
-               MixBlend blend, MixDirection direction);
+		friend class TransformConstraintTimeline;
 
-    const String &getName();
+		friend class TranslateTimeline;
 
-    inline Vector<Timeline *> &getTimelines() { return _timelines; }
+		friend class TranslateXTimeline;
 
-    bool hasTimeline(int id);
+		friend class TranslateYTimeline;
 
-    float getDuration();
+		friend class TwoColorTimeline;
 
-    void setDuration(float inValue);
+	public:
+		Animation(const String &name, Vector<Timeline *> &timelines, float duration);
 
-#ifndef __EMSCRIPTEN__
-private:
-#endif
-    Vector<Timeline *> _timelines;
-    HashMap<int, bool> _timelineIds;
-    float _duration;
-    String _name;
+		~Animation();
 
-    /// @param target After the first and before the last entry.
-    static int binarySearch(Vector<float> &values, float target, int step);
+		/// Applies all the animation's timelines to the specified skeleton.
+		/// See also Timeline::apply(Skeleton&, float, float, Vector, float, MixPose, MixDirection)
+		void apply(Skeleton &skeleton, float lastTime, float time, bool loop, Vector<Event *> *pEvents, float alpha,
+				   MixBlend blend, MixDirection direction);
 
-    /// @param target After the first and before the last entry.
-    static int binarySearch(Vector<float> &values, float target);
+		const String &getName();
 
-    static int linearSearch(Vector<float> &values, float target, int step);
-};
-} // namespace spine
+		Vector<Timeline *> &getTimelines();
+
+		bool hasTimeline(Vector<PropertyId> &ids);
+
+		float getDuration();
+
+		void setDuration(float inValue);
+
+		/// @param target After the first and before the last entry.
+		static int search(Vector<float> &values, float target);
+
+		static int search(Vector<float> &values, float target, int step);
+	private:
+		Vector<Timeline *> _timelines;
+		HashMap<PropertyId, bool> _timelineIds;
+		float _duration;
+		String _name;
+	};
+}
 
 #endif /* Spine_Animation_h */

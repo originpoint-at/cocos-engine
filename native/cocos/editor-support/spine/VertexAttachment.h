@@ -1,16 +1,16 @@
 /******************************************************************************
  * Spine Runtimes License Agreement
- * Last updated January 1, 2020. Replaces all prior versions.
+ * Last updated July 28, 2023. Replaces all prior versions.
  *
- * Copyright (c) 2013-2020, Esoteric Software LLC
+ * Copyright (c) 2013-2023, Esoteric Software LLC
  *
  * Integration of the Spine Runtimes into software or otherwise creating
  * derivative works of the Spine Runtimes is permitted under the terms and
  * conditions of Section 2 of the Spine Editor License Agreement:
  * http://esotericsoftware.com/spine-editor-license
  *
- * Otherwise, it is permitted to integrate the Spine Runtimes into software
- * or otherwise create derivative works of the Spine Runtimes (collectively,
+ * Otherwise, it is permitted to integrate the Spine Runtimes into software or
+ * otherwise create derivative works of the Spine Runtimes (collectively,
  * "Products"), provided that each user of the Products must obtain their own
  * Spine Editor license and redistribution of the Products in any form must
  * include this license and copyright notice.
@@ -23,8 +23,8 @@
  * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES,
  * BUSINESS INTERRUPTION, OR LOSS OF USE, DATA, OR PROFITS) HOWEVER CAUSED AND
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
- * THE SPINE RUNTIMES, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THE
+ * SPINE RUNTIMES, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *****************************************************************************/
 
 #ifndef Spine_VertexAttachment_h
@@ -35,61 +35,67 @@
 #include <spine/Vector.h>
 
 namespace spine {
-class Slot;
+	class Slot;
 
-/// An attachment with vertices that are transformed by one or more bones and can be deformed by a slot's vertices.
-class SP_API VertexAttachment : public Attachment {
-    friend class SkeletonBinary;
-    friend class SkeletonJson;
-    friend class DeformTimeline;
+	/// An attachment with vertices that are transformed by one or more bones and can be deformed by a slot's vertices.
+	class SP_API VertexAttachment : public Attachment {
+		friend class SkeletonBinary;
 
-    RTTI_DECL
+		friend class SkeletonJson;
 
-public:
-    explicit VertexAttachment(const String& name);
+		friend class DeformTimeline;
 
-    virtual ~VertexAttachment();
+	RTTI_DECL
 
-    void computeWorldVertices(Slot& slot, float* worldVertices);
-    void computeWorldVertices(Slot& slot, Vector<float>& worldVertices);
+	public:
+		explicit VertexAttachment(const String &name);
 
-    /// Transforms local vertices to world coordinates.
-    /// @param start The index of the first Vertices value to transform. Each vertex has 2 values, x and y.
-    /// @param count The number of world vertex values to output. Must be less than or equal to WorldVerticesLength - start.
-    /// @param worldVertices The output world vertices. Must have a length greater than or equal to offset + count.
-    /// @param offset The worldVertices index to begin writing values.
-    /// @param stride The number of worldVertices entries between the value pairs written.
-    void computeWorldVertices(Slot& slot, size_t start, size_t count, float* worldVertices, size_t offset, size_t stride = 2);
-    void computeWorldVertices(Slot& slot, size_t start, size_t count, Vector<float>& worldVertices, size_t offset, size_t stride = 2);
+		virtual ~VertexAttachment();
 
-    /// Gets a unique ID for this attachment.
-    inline int getId() const { return _id; }
+		void computeWorldVertices(Slot &slot, float *worldVertices);
 
-    inline Vector<size_t>& getBones() { return _bones; }
+		void computeWorldVertices(Slot &slot, Vector<float> &worldVertices);
 
-    inline Vector<float>& getVertices() { return _vertices; }
+		/// Transforms local vertices to world coordinates.
+		/// @param start The index of the first Vertices value to transform. Each vertex has 2 values, x and y.
+		/// @param count The number of world vertex values to output. Must be less than or equal to WorldVerticesLength - start.
+		/// @param worldVertices The output world vertices. Must have a length greater than or equal to offset + count.
+		/// @param offset The worldVertices index to begin writing values.
+		/// @param stride The number of worldVertices entries between the value pairs written.
+		virtual void computeWorldVertices(Slot &slot, size_t start, size_t count, float *worldVertices, size_t offset,
+								  size_t stride = 2);
 
-    inline size_t getWorldVerticesLength() const { return _worldVerticesLength; }
-    inline void setWorldVerticesLength(size_t inValue) { _worldVerticesLength = inValue; }
+		virtual void computeWorldVertices(Slot &slot, size_t start, size_t count, Vector<float> &worldVertices, size_t offset,
+								  size_t stride = 2);
 
-    inline VertexAttachment* getDeformAttachment() { return _deformAttachment; }
-    inline void setDeformAttachment(VertexAttachment* attachment) { _deformAttachment = attachment; }
+		/// Gets a unique ID for this attachment.
+		int getId();
 
-    void copyTo(VertexAttachment* other);
+		Vector<int> &getBones();
 
-#ifndef __EMSCRIPTEN__
-protected:
-#endif
-    Vector<size_t> _bones;
-    Vector<float> _vertices;
-    size_t _worldVerticesLength;
-    VertexAttachment* _deformAttachment;
+		Vector<float> &getVertices();
 
-private:
-    const int _id;
+		size_t getWorldVerticesLength();
 
-    static int getNextID();
-};
-} // namespace spine
+		void setWorldVerticesLength(size_t inValue);
+
+		Attachment * getTimelineAttachment();
+
+		void setTimelineAttachment(Attachment *attachment);
+
+		void copyTo(VertexAttachment *other);
+
+	protected:
+		Vector <int> _bones;
+		Vector<float> _vertices;
+		size_t _worldVerticesLength;
+		Attachment *_timelineAttachment;
+
+	private:
+		const int _id;
+
+		static int getNextID();
+	};
+}
 
 #endif /* Spine_VertexAttachment_h */

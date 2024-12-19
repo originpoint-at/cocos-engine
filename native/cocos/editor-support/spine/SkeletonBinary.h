@@ -1,16 +1,16 @@
 /******************************************************************************
  * Spine Runtimes License Agreement
- * Last updated January 1, 2020. Replaces all prior versions.
+ * Last updated July 28, 2023. Replaces all prior versions.
  *
- * Copyright (c) 2013-2020, Esoteric Software LLC
+ * Copyright (c) 2013-2023, Esoteric Software LLC
  *
  * Integration of the Spine Runtimes into software or otherwise creating
  * derivative works of the Spine Runtimes is permitted under the terms and
  * conditions of Section 2 of the Spine Editor License Agreement:
  * http://esotericsoftware.com/spine-editor-license
  *
- * Otherwise, it is permitted to integrate the Spine Runtimes into software
- * or otherwise create derivative works of the Spine Runtimes (collectively,
+ * Otherwise, it is permitted to integrate the Spine Runtimes into software or
+ * otherwise create derivative works of the Spine Runtimes (collectively,
  * "Products"), provided that each user of the Products must obtain their own
  * Spine Editor license and redistribution of the Products in any form must
  * include this license and copyright notice.
@@ -23,109 +23,156 @@
  * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES,
  * BUSINESS INTERRUPTION, OR LOSS OF USE, DATA, OR PROFITS) HOWEVER CAUSED AND
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
- * THE SPINE RUNTIMES, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THE
+ * SPINE RUNTIMES, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *****************************************************************************/
 
 #ifndef Spine_SkeletonBinary_h
 #define Spine_SkeletonBinary_h
 
-#include <spine/Color.h>
+#include <spine/Inherit.h>
+#include <spine/Vector.h>
 #include <spine/SpineObject.h>
 #include <spine/SpineString.h>
-#include <spine/TransformMode.h>
-#include <spine/Vector.h>
+#include <spine/Color.h>
 
 namespace spine {
-class SkeletonData;
-class Atlas;
-class AttachmentLoader;
-class LinkedMesh;
-class Skin;
-class Attachment;
-class VertexAttachment;
-class Animation;
-class CurveTimeline;
+	class SkeletonData;
 
-class SP_API SkeletonBinary : public SpineObject {
-public:
-    static const int BONE_ROTATE;
-    static const int BONE_TRANSLATE;
-    static const int BONE_SCALE;
-    static const int BONE_SHEAR;
+	class Atlas;
 
-    static const int SLOT_ATTACHMENT;
-    static const int SLOT_COLOR;
-    static const int SLOT_TWO_COLOR;
+	class AttachmentLoader;
 
-    static const int PATH_POSITION;
-    static const int PATH_SPACING;
-    static const int PATH_MIX;
+	class LinkedMesh;
 
-    static const int CURVE_LINEAR;
-    static const int CURVE_STEPPED;
-    static const int CURVE_BEZIER;
+	class Skin;
 
-    explicit SkeletonBinary(Atlas* atlasArray);
+	class Attachment;
 
-    explicit SkeletonBinary(AttachmentLoader* attachmentLoader);
+	class VertexAttachment;
 
-    ~SkeletonBinary();
+	class Animation;
 
-    SkeletonData* readSkeletonData(const unsigned char* binary, int length);
+	class Timeline;
 
-    SkeletonData* readSkeletonDataFile(const String& path);
+	class CurveTimeline;
 
-    void setScale(float scale) { _scale = scale; }
+	class CurveTimeline1;
 
-    String& getError() { return _error; }
+	class CurveTimeline2;
 
-private:
-    struct DataInput : public SpineObject {
-        const unsigned char* cursor;
-        const unsigned char* end;
-    };
+	class Sequence;
 
-    AttachmentLoader* _attachmentLoader;
-    Vector<LinkedMesh*> _linkedMeshes;
-    String _error;
-    float _scale;
-    const bool _ownsLoader;
+	class SP_API SkeletonBinary : public SpineObject {
+	public:
+		static const int BONE_ROTATE = 0;
+		static const int BONE_TRANSLATE = 1;
+		static const int BONE_TRANSLATEX = 2;
+		static const int BONE_TRANSLATEY = 3;
+		static const int BONE_SCALE = 4;
+		static const int BONE_SCALEX = 5;
+		static const int BONE_SCALEY = 6;
+		static const int BONE_SHEAR = 7;
+		static const int BONE_SHEARX = 8;
+		static const int BONE_SHEARY = 9;
+        static const int BONE_INHERIT = 10;
 
-    void setError(const char* value1, const char* value2);
+		static const int SLOT_ATTACHMENT = 0;
+		static const int SLOT_RGBA = 1;
+		static const int SLOT_RGB = 2;
+		static const int SLOT_RGBA2 = 3;
+		static const int SLOT_RGB2 = 4;
+		static const int SLOT_ALPHA = 5;
 
-    char* readString(DataInput* input);
+		static const int ATTACHMENT_DEFORM = 0;
+		static const int ATTACHMENT_SEQUENCE = 1;
 
-    char* readStringRef(DataInput* input, SkeletonData* skeletonData);
+		static const int PATH_POSITION = 0;
+		static const int PATH_SPACING = 1;
+		static const int PATH_MIX = 2;
 
-    float readFloat(DataInput* input);
+        static const int PHYSICS_INERTIA = 0;
+        static const int PHYSICS_STRENGTH = 1;
+        static const int PHYSICS_DAMPING = 2;
+        static const int PHYSICS_MASS = 4;
+        static const int PHYSICS_WIND = 5;
+        static const int PHYSICS_GRAVITY = 6;
+        static const int PHYSICS_MIX = 7;
+        static const int PHYSICS_RESET = 8;
 
-    unsigned char readByte(DataInput* input);
+		static const int CURVE_LINEAR = 0;
+		static const int CURVE_STEPPED = 1;
+		static const int CURVE_BEZIER = 2;
 
-    signed char readSByte(DataInput* input);
+		explicit SkeletonBinary(Atlas *atlasArray);
 
-    bool readBoolean(DataInput* input);
+		explicit SkeletonBinary(AttachmentLoader *attachmentLoader, bool ownsLoader = false);
 
-    int readInt(DataInput* input);
+		~SkeletonBinary();
 
-    void readColor(DataInput* input, Color& color);
+		SkeletonData *readSkeletonData(const unsigned char *binary, int length);
 
-    int readVarint(DataInput* input, bool optimizePositive);
+		SkeletonData *readSkeletonDataFile(const String &path);
 
-    Skin* readSkin(DataInput* input, bool defaultSkin, SkeletonData* skeletonData, bool nonessential);
+		void setScale(float scale) { _scale = scale; }
 
-    Attachment* readAttachment(DataInput* input, Skin* skin, int slotIndex, const String& attachmentName, SkeletonData* skeletonData, bool nonessential);
+		String &getError() { return _error; }
 
-    void readVertices(DataInput* input, VertexAttachment* attachment, int vertexCount);
+	private:
+		struct DataInput : public SpineObject {
+			const unsigned char *cursor;
+			const unsigned char *end;
+		};
 
-    void readFloatArray(DataInput* input, int n, float scale, Vector<float>& array);
+		AttachmentLoader *_attachmentLoader;
+		Vector<LinkedMesh *> _linkedMeshes;
+		String _error;
+		float _scale;
+		const bool _ownsLoader;
 
-    void readShortArray(DataInput* input, Vector<unsigned short>& array);
+		void setError(const char *value1, const char *value2);
 
-    Animation* readAnimation(const String& name, DataInput* input, SkeletonData* skeletonData);
+		char *readString(DataInput *input);
 
-    void readCurve(DataInput* input, int frameIndex, CurveTimeline* timeline);
-};
-} // namespace spine
+		char *readStringRef(DataInput *input, SkeletonData *skeletonData);
+
+		float readFloat(DataInput *input);
+
+		unsigned char readByte(DataInput *input);
+
+		signed char readSByte(DataInput *input);
+
+		bool readBoolean(DataInput *input);
+
+		int readInt(DataInput *input);
+
+		void readColor(DataInput *input, Color &color);
+
+		int readVarint(DataInput *input, bool optimizePositive);
+
+		Skin *readSkin(DataInput *input, bool defaultSkin, SkeletonData *skeletonData, bool nonessential);
+
+		Sequence *readSequence(DataInput *input);
+
+		Attachment *readAttachment(DataInput *input, Skin *skin, int slotIndex, const String &attachmentName,
+								   SkeletonData *skeletonData, bool nonessential);
+
+		int readVertices(DataInput *input, Vector<float> &vertices, Vector<int> &bones, bool weighted);
+
+		void readFloatArray(DataInput *input, int n, float scale, Vector<float> &array);
+
+		void readShortArray(DataInput *input, Vector<unsigned short> &array, int n);
+
+		Animation *readAnimation(const String &name, DataInput *input, SkeletonData *skeletonData);
+
+		void
+		setBezier(DataInput *input, CurveTimeline *timeline, int bezier, int frame, int value, float time1, float time2,
+				  float value1, float value2, float scale);
+
+		void readTimeline(DataInput *input, Vector<Timeline*> &timelines, CurveTimeline1 *timeline, float scale);
+
+		void readTimeline2(DataInput *input, Vector<Timeline*> &timelines, CurveTimeline2 *timeline, float scale);
+	};
+}
 
 #endif /* Spine_SkeletonBinary_h */
